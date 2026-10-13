@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { User, Lock, Loader2, Save, AlertCircle, ExternalLink } from "lucide-react";
+import { User, Lock, Loader2, Save, AlertCircle, ExternalLink, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -18,6 +18,7 @@ export default function AkunPage() {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [loadingPassword, setLoadingPassword] = useState(false);
   const [loadingEmail, setLoadingEmail] = useState(false);
+  const [loadingLogout, setLoadingLogout] = useState(false);
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
@@ -290,7 +291,52 @@ export default function AkunPage() {
         </form>
       </div>
 
-      {/* Bahaya: Lupa Password */}
+      {/* Sesi Login & Keluar Akun */}
+      <div className="bg-white rounded-2xl border border-red-200/80 p-6 shadow-xs">
+        <div className="flex items-center gap-2.5 mb-3">
+          <div className="h-8 w-8 rounded-lg bg-red-50 flex items-center justify-center">
+            <LogOut className="h-4 w-4 text-red-600" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-[#0F172A]">Sesi Login</h2>
+            <p className="text-xs text-[#64748B]">
+              Masuk sebagai <strong className="text-slate-800">{user?.email}</strong>
+            </p>
+          </div>
+        </div>
+
+        <p className="text-xs text-slate-500 mb-4">
+          Keluar dari sesi saat ini jika kamu menggunakan perangkat bersama atau ingin berganti akun.
+        </p>
+
+        <Button
+          type="button"
+          onClick={async () => {
+            if (!window.confirm("Apakah kamu yakin ingin keluar dari akun UdaLink?")) return;
+            setLoadingLogout(true);
+            try {
+              await supabase.auth.signOut();
+              toast.success("Berhasil keluar dari akun.");
+              window.location.href = "/masuk";
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : "Terjadi kesalahan";
+              toast.error(`Gagal keluar: ${msg}`);
+              setLoadingLogout(false);
+            }
+          }}
+          disabled={loadingLogout}
+          variant="outline"
+          className="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 text-sm font-semibold gap-2"
+        >
+          {loadingLogout ? (
+            <><Loader2 className="h-4 w-4 animate-spin text-red-600" /><span>Sedang Keluar...</span></>
+          ) : (
+            <><LogOut className="h-4 w-4" /><span>Keluar dari Akun Ini</span></>
+          )}
+        </Button>
+      </div>
+
+      {/* Bantuan: Lupa Password */}
       <div className="text-center">
         <Link
           href="/lupa-password"

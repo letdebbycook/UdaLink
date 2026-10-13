@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -17,9 +17,12 @@ import {
   X,
   ExternalLink,
   LogOut,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 export default function DashboardLayout({
   children,
@@ -28,6 +31,66 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const [currentUser, setCurrentUser] = useState<{
+    displayName: string;
+    username: string;
+    avatarUrl: string | null;
+    isPro: boolean;
+    isAdmin: boolean;
+  }>({
+    displayName: "Pengguna",
+    username: "...",
+    avatarUrl: null,
+    isPro: false,
+    isAdmin: false,
+  });
+
+  useEffect(() => {
+    async function loadUser() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const [profRes, planRes] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("display_name, username, avatar_url")
+            .eq("id", user.id)
+            .single(),
+          supabase.rpc("get_my_plan"),
+        ]);
+
+        const prof = profRes.data;
+        const plan = planRes.data as { is_pro?: boolean; role?: string } | null;
+
+        setCurrentUser({
+          displayName: prof?.display_name || user.email?.split("@")[0] || "Pengguna",
+          username: prof?.username || "user",
+          avatarUrl: prof?.avatar_url || null,
+          isPro: Boolean(plan?.is_pro),
+          isAdmin: plan?.role === "admin",
+        });
+      } catch (err) {
+        console.warn("Gagal memuat profil header:", err);
+      }
+    }
+    loadUser();
+  }, []);
+
+  async function handleLogout() {
+    if (!window.confirm("Apakah kamu yakin ingin keluar dari akun?")) return;
+    try {
+      setIsLoggingOut(true);
+      await supabase.auth.signOut();
+      toast.success("Berhasil keluar dari akun.");
+      window.location.href = "/masuk";
+    } catch (err) {
+      toast.error("Gagal keluar dari akun.");
+      setIsLoggingOut(false);
+    }
+  }
 
   const mainNavItems = [
     { name: "Ringkasan", href: "/dashboard", icon: LayoutDashboard },
@@ -52,8 +115,12 @@ export default function DashboardLayout({
     { name: "Kategori", href: "/dashboard/kategori", icon: Layers },
     { name: "Langganan", href: "/dashboard/langganan", icon: CreditCard },
     { name: "Pengaturan Akun", href: "/dashboard/akun", icon: User },
-    { name: "Panel Admin", href: "/admin", icon: ShieldCheck, badge: "Admin" },
+    ...(currentUser.isAdmin
+      ? [{ name: "Panel Admin", href: "/admin", icon: ShieldCheck, badge: "Admin" }]
+      : []),
   ];
+
+  const etalaseUrl = currentUser.username !== "..." ? `/${currentUser.username}` : "/nando";
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row">
@@ -69,7 +136,13 @@ export default function DashboardLayout({
               Uda<span className="text-[#16A34A]">Link</span>
             </span>
           </Link>
-          <Badge variant="pro">PRO</Badge>
+          {currentUser.isPro ? (
+            <Badge variant="pro">PRO</Badge>
+          ) : (
+            <Badge variant="outline" className="text-[10px] text-slate-500">
+              GRATIS
+            </Badge>
+          )}
         </div>
 
         {/* Navigation */}
@@ -101,52 +174,72 @@ export default function DashboardLayout({
 
           <div className="pt-4 mt-4 border-t border-[#E2E8F0]">
             <div className="text-[11px] font-semibold tracking-wider text-[#94A3B8] uppercase px-3 mb-2">
-              Khusus
+              Tautan Eksternal
             </div>
+            {currentUser.isAdmin && (
+              <Link
+                href="/admin"
+                className={cn(
+                  "flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] transition-colors",
+                  pathname.startsWith("/admin") && "bg-[#F1F5F9] text-[#0F172A] font-semibold"
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <ShieldCheck className="h-4.5 w-4.5 text-[#64748B]" />
+                  <span>Panel Admin</span>
+                </div>
+                <Badge variant="outline" className="text-[10px] uppercase">
+                  Admin
+                </Badge>
+              </Link>
+            )}
             <Link
-              href="/admin"
-              className={cn(
-                "flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] transition-colors",
-                pathname.startsWith("/admin") && "bg-[#F1F5F9] text-[#0F172A] font-semibold"
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <ShieldCheck className="h-4.5 w-4.5 text-[#64748B]" />
-                <span>Panel Admin</span>
-              </div>
-              <Badge variant="outline" className="text-[10px] uppercase">
-                Admin
-              </Badge>
-            </Link>
-            <Link
-              href="/nando"
+              href={etalaseUrl}
               target="_blank"
               className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-[#16A34A] hover:bg-[#F0FDF4] transition-colors mt-1"
             >
               <ExternalLink className="h-4.5 w-4.5" />
-              <span>Lihat Etalase</span>
+              <span>Lihat Etalasemu</span>
             </Link>
           </div>
         </div>
 
-        {/* User Mini Bar */}
+        {/* User Mini Bar with Actual Logout */}
         <div className="p-4 border-t border-[#E2E8F0] flex items-center justify-between">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="h-9 w-9 rounded-full bg-[#E2E8F0] flex items-center justify-center font-bold text-xs text-[#0F172A] shrink-0">
-              N
+            <div className="h-9 w-9 rounded-full bg-emerald-50 border border-emerald-200 overflow-hidden flex items-center justify-center font-bold text-xs text-[#16A34A] shrink-0">
+              {currentUser.avatarUrl ? (
+                <img
+                  src={currentUser.avatarUrl}
+                  alt={currentUser.displayName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                currentUser.displayName.charAt(0).toUpperCase()
+              )}
             </div>
             <div className="truncate text-left">
-              <p className="text-xs font-semibold text-[#0F172A] truncate">Nando Pratama</p>
-              <p className="text-[11px] text-[#64748B] truncate">@nando</p>
+              <p className="text-xs font-semibold text-[#0F172A] truncate">
+                {currentUser.displayName}
+              </p>
+              <p className="text-[11px] text-[#64748B] truncate">
+                @{currentUser.username}
+              </p>
             </div>
           </div>
-          <Link
-            href="/masuk"
-            title="Keluar"
-            className="p-1.5 text-[#94A3B8] hover:text-[#DC2626] transition-colors"
+          <button
+            type="button"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            title="Keluar dari Akun"
+            className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
           >
-            <LogOut className="h-4 w-4" />
-          </Link>
+            {isLoggingOut ? (
+              <Loader2 className="h-4 w-4 animate-spin text-red-600" />
+            ) : (
+              <LogOut className="h-4 w-4" />
+            )}
+          </button>
         </div>
       </aside>
 
@@ -164,7 +257,7 @@ export default function DashboardLayout({
           </Link>
           <div className="flex items-center gap-2">
             <Link
-              href="/nando"
+              href={etalaseUrl}
               target="_blank"
               className="text-xs font-semibold text-[#16A34A] bg-[#F0FDF4] px-2.5 py-1.5 rounded-lg border border-[#BBF7D0] flex items-center gap-1"
             >
@@ -225,11 +318,29 @@ export default function DashboardLayout({
         <div className="md:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-xs flex flex-col justify-end">
           <div className="bg-white rounded-t-3xl p-5 border-t border-[#E2E8F0] space-y-4 animate-in slide-in-from-bottom duration-200">
             <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0]">
-              <h3 className="font-bold text-[#0F172A]">Menu Lainnya</h3>
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-full bg-emerald-50 text-[#16A34A] flex items-center justify-center font-bold text-xs">
+                  {currentUser.avatarUrl ? (
+                    <img
+                      src={currentUser.avatarUrl}
+                      alt="Avatar"
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    currentUser.displayName.charAt(0).toUpperCase()
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-[#0F172A] leading-tight">
+                    {currentUser.displayName}
+                  </h3>
+                  <p className="text-[11px] text-slate-500">@{currentUser.username}</p>
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={() => setShowMoreMenu(false)}
-                className="p-1 rounded-full text-[#64748B] hover:bg-[#F1F5F9]"
+                className="p-1.5 rounded-full text-[#64748B] hover:bg-[#F1F5F9]"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -256,14 +367,22 @@ export default function DashboardLayout({
                   </Link>
                 );
               })}
-              <Link
-                href="/masuk"
-                onClick={() => setShowMoreMenu(false)}
-                className="flex items-center gap-3 p-3 rounded-xl text-[#DC2626] font-medium text-sm hover:bg-[#FEE2E2]/30 transition-colors"
+              <button
+                type="button"
+                onClick={() => {
+                  setShowMoreMenu(false);
+                  handleLogout();
+                }}
+                disabled={isLoggingOut}
+                className="w-full flex items-center gap-3 p-3 rounded-xl text-[#DC2626] font-medium text-sm hover:bg-[#FEE2E2]/30 transition-colors text-left"
               >
-                <LogOut className="h-5 w-5" />
+                {isLoggingOut ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <LogOut className="h-5 w-5" />
+                )}
                 <span>Keluar Akun</span>
-              </Link>
+              </button>
             </div>
           </div>
         </div>
