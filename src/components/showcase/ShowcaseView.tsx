@@ -463,7 +463,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                       {formatRupiah(prod.price)}
                     </p>
                     <a
-                      href={prod.affiliate_url}
+                      href={`/go/${prod.id}`}
                       target="_blank"
                       rel="noreferrer"
                       className="mt-1.5 w-full py-1.5 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 transition-all"
@@ -607,7 +607,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
 
                       {/* Tombol Beli */}
                       <a
-                        href={prod.affiliate_url}
+                        href={`/go/${prod.id}`}
                         target="_blank"
                         rel="noreferrer"
                         className="w-full h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-[0.98]"

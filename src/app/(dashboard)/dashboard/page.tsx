@@ -1,46 +1,144 @@
-import React from "react";
+"use client";
+
+import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Copy, ExternalLink, Package, MousePointerClick, Sparkles, CheckCircle2 } from "lucide-react";
+import {
+  Copy, ExternalLink, Package, MousePointerClick,
+  Sparkles, CheckCircle2, Circle, Loader2, TrendingUp,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
+import type { MyPlanResponse, MyStatsResponse } from "@/types/database";
+import { format } from "date-fns";
+import { id as localeId } from "date-fns/locale";
 
 export default function DashboardOverviewPage() {
+  const [plan, setPlan] = useState<MyPlanResponse | null>(null);
+  const [stats, setStats] = useState<MyStatsResponse | null>(null);
+  const [username, setUsername] = useState<string>("");
+  const [displayName, setDisplayName] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const [siteUrl, setSiteUrl] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Deteksi URL dinamis (lokal atau Vercel)
+      setSiteUrl(window.location.origin);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Ambil username dari profil
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("username, display_name")
+        .eq("id", user.id)
+        .single();
+
+      if (profile) {
+        setUsername(profile.username);
+        setDisplayName(profile.display_name);
+      }
+
+      // Ambil plan dan stats secara paralel
+      const [planRes, statsRes] = await Promise.all([
+        supabase.rpc("get_my_plan"),
+        supabase.rpc("get_my_stats", { p_days: 7 }),
+      ]);
+
+      if (planRes.data) setPlan(planRes.data as MyPlanResponse);
+      if (statsRes.data) setStats(statsRes.data as MyStatsResponse);
+    } catch (err) {
+      console.error("Gagal memuat data dashboard:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const etalaseUrl = username ? `${siteUrl}/${username}` : "";
+  const etalaseDisplay = username ? `${siteUrl.replace(/^https?:\/\//, "")}/${username}` : "...";
+
+  const handleCopy = () => {
+    if (!etalaseUrl) return;
+    navigator.clipboard.writeText(etalaseUrl);
+    toast.success("Link etalase disalin!");
+  };
+
+  const isPro = plan?.is_pro ?? false;
+  const proUntilStr = plan?.pro_until
+    ? format(new Date(plan.pro_until), "d MMM yyyy", { locale: localeId })
+    : null;
+
+  const checklist = [
+    { label: "Lengkapi foto profil dan bio etalase", done: true },
+    { label: "Tambahkan produk affiliate pertamamu", done: (plan?.product_count ?? 0) > 0 },
+    { label: "Pasang link etalase di bio media sosialmu", done: false },
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-[#16A34A]" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Title */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-[#0F172A]">Ringkasan</h1>
-        <p className="text-sm text-[#64748B]">Pantau performa etalase dan produk affiliate-mu di sini.</p>
+        <p className="text-sm text-[#64748B]">
+          Pantau performa etalase dan produk affiliate-mu di sini.
+        </p>
       </div>
 
       {/* Kartu Link Etalase */}
       <Card className="border-[#BBF7D0] bg-gradient-to-r from-[#F0FDF4] to-white">
         <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-1">
-            <span className="text-xs font-semibold text-[#16A34A] uppercase tracking-wider">Link Etalasemu</span>
-            <div className="text-base sm:text-lg font-bold text-[#0F172A] font-mono">
-              udalink.id/nando
+            <span className="text-xs font-semibold text-[#16A34A] uppercase tracking-wider">
+              Link Etalasemu
+            </span>
+            <div className="text-base sm:text-lg font-bold text-[#0F172A] font-mono truncate max-w-xs">
+              {etalaseDisplay}
             </div>
-            <p className="text-xs text-[#64748B]">Pasang link ini di bio Instagram, TikTok, dan bio YouTube-mu.</p>
+            <p className="text-xs text-[#64748B]">
+              Pasang link ini di bio Instagram, TikTok, dan bio YouTube-mu.
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs"
+              onClick={handleCopy}
+              disabled={!etalaseUrl}
+            >
               <Copy className="h-3.5 w-3.5" />
               <span>Salin Link</span>
             </Button>
-            <Link href="/nando" target="_blank">
-              <Button size="sm" className="gap-1.5 text-xs">
-                <ExternalLink className="h-3.5 w-3.5" />
-                <span>Lihat Halaman</span>
-              </Button>
-            </Link>
+            {etalaseUrl && (
+              <Link href={`/${username}`} target="_blank">
+                <Button size="sm" className="gap-1.5 text-xs">
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  <span>Lihat Halaman</span>
+                </Button>
+              </Link>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* 3 Kartu Angka */}
+      {/* 3 Kartu Statistik */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Total Produk */}
         <Card>
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
@@ -48,56 +146,101 @@ export default function DashboardOverviewPage() {
               <Package className="h-4 w-4 text-[#16A34A]" />
             </div>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-[#0F172A]">12</span>
-              <span className="text-xs text-[#64748B]">/ Unlimited (Pro)</span>
+              <span className="text-2xl font-bold text-[#0F172A]">
+                {plan?.product_count ?? 0}
+              </span>
+              <span className="text-xs text-[#64748B]">
+                / {isPro ? "Unlimited (Pro)" : `${plan?.free_product_limit ?? 30} (Gratis)`}
+              </span>
             </div>
+            {!isPro && plan && (
+              <div className="mt-2 h-1.5 bg-[#E2E8F0] rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[#16A34A] rounded-full transition-all"
+                  style={{ width: `${Math.min(100, ((plan.product_count) / (plan.free_product_limit)) * 100)}%` }}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
 
+        {/* Klik 7 Hari */}
         <Card>
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-[#64748B]">Klik 7 Hari Terakhir</span>
+              <span className="text-xs font-medium text-[#64748B]">Klik / 7 Hari Terakhir</span>
               <MousePointerClick className="h-4 w-4 text-[#16A34A]" />
             </div>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-[#0F172A]">1.248</span>
-              <span className="text-xs text-emerald-600 font-medium">+18% dari minggu lalu</span>
+              <span className="text-2xl font-bold text-[#0F172A]">
+                {stats?.total_clicks?.toLocaleString("id-ID") ?? 0}
+              </span>
+              {(stats?.total_clicks ?? 0) > 0 && (
+                <span className="text-xs text-emerald-600 font-medium flex items-center gap-0.5">
+                  <TrendingUp className="h-3 w-3" />
+                  klik
+                </span>
+              )}
             </div>
+            {!isPro && (
+              <p className="text-[10px] text-[#94A3B8] mt-1">Upgrade Pro untuk statistik lengkap</p>
+            )}
           </CardContent>
         </Card>
 
+        {/* Status Paket */}
         <Card>
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-[#64748B]">Status Paket</span>
-              <Sparkles className="h-4 w-4 text-amber-500" />
+              <Sparkles className={`h-4 w-4 ${isPro ? "text-amber-500" : "text-[#94A3B8]"}`} />
             </div>
             <div className="mt-2 flex items-center gap-2">
-              <Badge variant="pro">PRO AKTIF</Badge>
-              <span className="text-xs text-[#64748B]">s.d. 30 Nov 2026</span>
+              {isPro ? (
+                <Badge className="bg-amber-100 text-amber-800 gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  PRO AKTIF
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-[#64748B]">Gratis</Badge>
+              )}
             </div>
+            {isPro && proUntilStr && (
+              <p className="text-[11px] text-[#64748B] mt-1">s.d. {proUntilStr}</p>
+            )}
+            {!isPro && (
+              <Link href="/dashboard/langganan">
+                <p className="text-[11px] text-[#16A34A] font-semibold mt-1 hover:underline">
+                  Upgrade ke Pro →
+                </p>
+              </Link>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Checklist Awal */}
+      {/* Checklist Memulai */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-bold text-[#0F172A]">Checklist Memulai Etalase</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center gap-3 text-sm text-[#0F172A]">
-            <CheckCircle2 className="h-4 w-4 text-[#16A34A] shrink-0" />
-            <span className="line-through text-[#64748B]">Lengkapi foto profil dan bio etalase</span>
-          </div>
-          <div className="flex items-center gap-3 text-sm text-[#0F172A]">
-            <CheckCircle2 className="h-4 w-4 text-[#16A34A] shrink-0" />
-            <span className="line-through text-[#64748B]">Tambahkan produk affiliate pertamamu</span>
-          </div>
-          <div className="flex items-center gap-3 text-sm text-[#0F172A]">
-            <div className="h-4 w-4 rounded-full border-2 border-[#CBD5E1] shrink-0" />
-            <span>Pasang link etalase di bio media sosialmu</span>
+        <CardContent className="p-5 space-y-3">
+          <h3 className="font-semibold text-sm text-[#0F172A]">Checklist Memulai Etalase</h3>
+          <div className="space-y-2.5">
+            {checklist.map((item, i) => (
+              <div key={i} className="flex items-center gap-2.5">
+                {item.done ? (
+                  <CheckCircle2 className="h-4 w-4 text-[#16A34A] shrink-0" />
+                ) : (
+                  <Circle className="h-4 w-4 text-[#CBD5E1] shrink-0" />
+                )}
+                <span
+                  className={`text-xs ${item.done
+                    ? "text-[#94A3B8] line-through"
+                    : "text-[#374151] font-medium"
+                    }`}
+                >
+                  {item.label}
+                </span>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
