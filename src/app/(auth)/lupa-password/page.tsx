@@ -6,21 +6,36 @@ import { ArrowLeft, Loader2, MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 export default function LupaPasswordPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // UI demo simulation for Sprint 1
-    setTimeout(() => {
-      setLoading(false);
+
+    try {
+      const redirectUrl = `${window.location.origin}/atur-ulang-password`;
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl,
+      });
+
+      if (error) {
+        toast.error(`Gagal mengirim email: ${error.message}`);
+        return;
+      }
+
       setSubmitted(true);
       toast.success("Tautan atur ulang kata sandi berhasil dikirim!");
-    }, 700);
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : "Terjadi kesalahan";
+      toast.error(`Terjadi kesalahan: ${errorMsg}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

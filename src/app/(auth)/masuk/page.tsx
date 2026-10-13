@@ -1,28 +1,51 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
-export default function MasukPage() {
+function MasukForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTarget = searchParams.get("redirect") || "/dashboard";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // UI demo simulation for Sprint 1
-    setTimeout(() => {
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        if (error.message.includes("Invalid login credentials")) {
+          toast.error("Email atau kata sandi salah. Silakan periksa kembali.");
+        } else {
+          toast.error(`Gagal masuk: ${error.message}`);
+        }
+        return;
+      }
+
+      toast.success("Berhasil masuk! Mengarahkan...");
+      router.push(redirectTarget);
+      router.refresh();
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : "Terjadi kesalahan";
+      toast.error(`Terjadi kesalahan: ${errorMsg}`);
+    } finally {
       setLoading(false);
-      toast.success("Berhasil masuk! Mengarahkan ke dashboard...");
-      router.push("/dashboard");
-    }, 600);
+    }
   };
 
   return (
@@ -99,5 +122,17 @@ export default function MasukPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function MasukPage() {
+  return (
+    <Suspense fallback={
+      <div className="text-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin mx-auto text-[#16A34A]" />
+      </div>
+    }>
+      <MasukForm />
+    </Suspense>
   );
 }
