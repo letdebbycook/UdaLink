@@ -68,12 +68,12 @@ async function verify() {
       fail(`Produk: harus 12, ditemukan ${prodLen}`);
     }
 
-    // Uji banner (harus ada 2 karena Pro)
+    // Uji banner (harus ada 2 karena nando Pro setelah seed diperbarui)
     const bannerLen = pageNando.banners?.length ?? 0;
     if (bannerLen >= 1) {
-      ok(`Banner: ${bannerLen} banner ditemukan`);
+      ok(`Banner: ${bannerLen} banner ditemukan (akun Pro)`);
     } else {
-      warn('Banner: 0 banner (pastikan nando berstatus Pro di seed)');
+      warn('Banner: 0 banner — jalankan ulang seed-dev.sql yang sudah diperbarui (tambah set Pro)');
     }
 
     // Uji show_branding untuk Pro = false
@@ -135,19 +135,14 @@ async function verify() {
   console.log('');
 
   // ── BE2.3: Seed data ──────────────────────────────────────────────────
+  // Catatan: tabel profiles diblokir RLS untuk akses anon langsung.
+  // Verifikasi dilakukan via hasil get_public_page (SECURITY DEFINER) yang sudah lolos di atas.
   console.log('--- BE2.3: Uji Keberadaan Seed Data ---');
-  const { data: profiles, error: errProfiles } = await supabase
-    .from('profiles')
-    .select('username, display_name')
-    .eq('username', 'nando')
-    .limit(1);
-
-  if (errProfiles) {
-    fail('Baca tabel profiles error', errProfiles.message);
-  } else if (profiles && profiles.length > 0) {
-    ok(`Profil seed \"nando\" ditemukan: ${profiles[0].display_name}`);
+  if (pageNando?.profile?.username === 'nando') {
+    ok(`Profil seed "nando" tersedia via get_public_page: ${pageNando.profile.display_name || '(nama kosong)'}`);
+    ok(`Seed: ${pageNando.categories?.length ?? 0} kategori, ${pageNando.products?.length ?? 0} produk, ${pageNando.banners?.length ?? 0} banner`);
   } else {
-    fail('Profil seed \"nando\" tidak ditemukan', 'Jalankan seed-dev.sql di Supabase SQL Editor');
+    fail('Profil seed "nando" tidak ditemukan', 'Jalankan seed-dev.sql yang sudah diperbarui di Supabase SQL Editor');
   }
   console.log('');
 

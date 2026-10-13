@@ -96,6 +96,11 @@ BEGIN
     (v_nando_id, 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1200&h=400&fit=crop', 'Mega Promo Gajian Diskon s/d 70%', 'https://shopee.co.id', 1, true),
     (v_nando_id, 'https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?w=1200&h=400&fit=crop', 'Flash Sale Gadget Murah Terbatas', 'https://vt.tiktok.com', 2, true);
 
-    RAISE NOTICE '[OK] Seeding berhasil! User Nando (nando@udalink.id), 4 kategori, 12 produk (#1-#12), dan 2 banner telah dibuat.';
+    -- 7. Set Nando sebagai pengguna Pro (aktif 30 hari) agar banner & fitur Pro bisa diuji
+    UPDATE public.memberships
+    SET pro_until = now() + interval '30 days'
+    WHERE user_id = v_nando_id;
+
+    RAISE NOTICE '[OK] Seeding berhasil! User Nando (nando@udalink.id) — Pro aktif 30 hari, 4 kategori, 12 produk (#1-#12), dan 2 banner telah dibuat.';
 END;
 $$;
