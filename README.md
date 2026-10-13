@@ -1,10 +1,10 @@
-# UdaLink — Platform "Link di Bio" Khusus Affiliator
+# UdaLink: Platform "Link di Bio" Khusus Affiliator
 
-UdaLink adalah aplikasi web etalase *link in bio* yang dirancang khusus untuk affiliator (Shopee, TikTok Shop, Tokopedia, Lazada). Penonton video cukup mencari atau mengetik nomor produk (misal: `#23`) dan langsung diarahkan ke tautan affiliate dengan pencatatan metrik klik otomatis.
+UdaLink adalah aplikasi etalase tautan bio untuk affiliator Shopee, TikTok Shop, Tokopedia, dan Lazada. Penonton video cukup mencari atau mengetik nomor produk (misal: `#23`) dan langsung diarahkan ke tautan affiliate dengan pencatatan metrik klik otomatis.
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 - **Frontend:** Next.js (App Router, TypeScript), Tailwind CSS, shadcn/ui, Lucide Icons, Plus Jakarta Sans.
 - **Backend & Database:** Supabase (PostgreSQL, Supabase Auth, Row Level Security, Supabase Storage).
@@ -13,7 +13,7 @@ UdaLink adalah aplikasi web etalase *link in bio* yang dirancang khusus untuk af
 
 ---
 
-## 🚀 Panduan Setup Lokal
+## Panduan Setup Lokal
 
 ### 1. Prasyarat Sistem
 - Node.js versi LTS (`v20` atau `v22` disarankan)
@@ -43,15 +43,15 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-or-publishable-key
 
 ---
 
-## 🗄️ Setup Database & Supabase
+## Setup Database & Supabase
 
 1. **Jalankan Skema Database:**
    * Buka **Supabase Dashboard** -> **SQL Editor** -> buat query baru.
-   * Salin seluruh isi file [`supabase/schema.sql`](supabase/schema.sql) dan klik **Run**.
+   * Salin seluruh isi file [supabase/schema.sql](supabase/schema.sql) dan klik **Run**.
    * Skema ini mencakup 8 tabel utama, RLS policies, storage bucket policies, triggers, dan seluruh fungsi RPC.
 
 2. **(Opsional) Isi Data Dummy untuk Pengujian:**
-   * Buka query baru di SQL Editor, salin isi file [`supabase/seed-dev.sql`](supabase/seed-dev.sql), lalu klik **Run**.
+   * Buka query baru di SQL Editor, salin isi file [supabase/seed-dev.sql](supabase/seed-dev.sql), lalu klik **Run**.
    * Ini akan membuat affiliator contoh `@nando` dengan 4 kategori, 12 produk (#1 s/d #12), dan 2 banner.
 
 3. **Matikan Konfirmasi Email untuk Development:**
@@ -60,7 +60,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-or-publishable-key
 
 ---
 
-## 👑 Cara Menjadikan Akun Sebagai Admin
+## Konfigurasi Akun Admin
 
 Setelah mendaftar akun baru melalui antarmuka aplikasi di `/daftar`, buka **SQL Editor** di Supabase dan jalankan query berikut:
 
@@ -74,7 +74,7 @@ Setelah query dieksekusi, akun Anda akan memiliki hak akses penuh ke rute `/admi
 
 ---
 
-## 🧪 Pengujian & Verifikasi
+## Pengujian & Verifikasi
 
 ### 1. Verifikasi Koneksi API & Storage
 ```bash
@@ -97,7 +97,7 @@ npm run build
 
 ---
 
-## 🌐 Panduan Deployment ke Vercel
+## Panduan Deployment ke Vercel
 
 1. Hubungkan repository GitHub ini ke Vercel.
 2. Tambahkan Environment Variables di Vercel Project Settings:
