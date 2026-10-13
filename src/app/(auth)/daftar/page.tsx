@@ -80,11 +80,25 @@ export default function DaftarPage() {
       });
 
       if (error) {
-        toast.error(`Pendaftaran gagal: ${error.message}`);
+        if (error.message.includes("already registered") || error.message.includes("User already registered")) {
+          toast.error("Email ini sudah terdaftar. Silakan masuk atau gunakan email lain.");
+        } else {
+          toast.error(`Pendaftaran gagal: ${error.message}`);
+        }
         return;
       }
 
-      toast.success("Pendaftaran berhasil! Mengarahkan ke etalasemu...");
+      // Jika email confirmation aktif di Supabase, session akan null
+      if (!data.session) {
+        toast.success("Pendaftaran berhasil! Cek email kamu untuk konfirmasi akun sebelum masuk.", {
+          duration: 8000,
+        });
+        router.push("/masuk");
+        return;
+      }
+
+      // Session langsung aktif (email confirmation dimatikan)
+      toast.success("Pendaftaran berhasil! Mengarahkan ke dashboard...");
       router.push("/dashboard");
       router.refresh();
     } catch (err: unknown) {
