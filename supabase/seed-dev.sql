@@ -45,6 +45,28 @@ BEGIN
         'authenticated'
     );
 
+    -- 2.1 Daftarkan ke auth.identities (Wajib agar Supabase GoTrue Auth bisa memproses login email)
+    DELETE FROM auth.identities WHERE user_id = v_nando_id;
+    INSERT INTO auth.identities (
+        id,
+        user_id,
+        identity_data,
+        provider,
+        provider_id,
+        last_sign_in_at,
+        created_at,
+        updated_at
+    ) VALUES (
+        v_nando_id,
+        v_nando_id,
+        format('{"sub":"%s","email":"%s"}', v_nando_id, 'nando@udalink.id')::jsonb,
+        'email',
+        v_nando_id::text,
+        now(),
+        now(),
+        now()
+    );
+
     -- 3. Lengkapi profil Nando di public.profiles
     UPDATE public.profiles
     SET
