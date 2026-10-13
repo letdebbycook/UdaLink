@@ -177,3 +177,22 @@ export interface MyPlanResponse {
   bank_account_name: string;
   admin_whatsapp: string;
 }
+
+export interface AdminPaymentItem {
+  id: string;
+  user_id: string;
+  amount: number;
+  duration_days: number;
+  sender_name: string;
+  sender_bank: string;
+  proof_path: string;
+  status: "pending" | "approved" | "rejected";
+  admin_note: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+  user: {
+    username: string;
+    display_name: string;
+  };
+}
+

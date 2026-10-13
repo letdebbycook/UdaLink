@@ -118,8 +118,10 @@ CREATE TABLE IF NOT EXISTS public.payments (
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
     admin_note TEXT,
     reviewed_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT payments_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE
 );
+
 
 -- Index unik bersyarat: satu pengguna hanya boleh punya satu pembayaran berstatus pending
 CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_one_pending_per_user 
@@ -380,6 +382,34 @@ CREATE TRIGGER trg_app_settings_updated_at
     BEFORE UPDATE ON public.app_settings
     FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
+-- 4.4 Trigger normalisasi nomor WhatsApp admin pada app_settings
+CREATE OR REPLACE FUNCTION public.handle_normalize_admin_whatsapp()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_cleaned TEXT;
+BEGIN
+    IF NEW.admin_whatsapp IS NOT NULL THEN
+        v_cleaned := regexp_replace(NEW.admin_whatsapp, '[^0-9]', '', 'g');
+        IF v_cleaned LIKE '08%' THEN
+            v_cleaned := '62' || substr(v_cleaned, 2);
+        END IF;
+        NEW.admin_whatsapp := v_cleaned;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_normalize_admin_whatsapp ON public.app_settings;
+CREATE TRIGGER trg_normalize_admin_whatsapp
+    BEFORE INSERT OR UPDATE OF admin_whatsapp ON public.app_settings
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_normalize_admin_whatsapp();
+
+
 -- ==============================================================================
 -- 5. ROW LEVEL SECURITY (RLS) & POLICIES
 -- ==============================================================================
@@ -397,9 +427,11 @@ ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
 -- 5.1 POLICIES: profiles
 -- Pemilik membaca profil miliknya (pengunjung publik membaca via RPC get_public_page di Sprint 2)
 DROP POLICY IF EXISTS "profiles_select_own" ON public.profiles;
-CREATE POLICY "profiles_select_own" ON public.profiles
+DROP POLICY IF EXISTS "profiles_select_own_or_admin" ON public.profiles;
+CREATE POLICY "profiles_select_own_or_admin" ON public.profiles
     FOR SELECT TO authenticated
-    USING (auth.uid() = id);
+    USING (auth.uid() = id OR public.is_admin());
+
 
 -- Pemilik mengubah profil jika akun tidak disuspend
 DROP POLICY IF EXISTS "profiles_update_own" ON public.profiles;

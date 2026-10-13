@@ -313,3 +313,54 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.admin_set_suspended(UUID, BOOLEAN) TO authenticated;
+
+
+-- 7. FUNGSI admin_list_payments
+-- Mengambil seluruh daftar pembayaran langganan Pro beserta informasi user profil
+CREATE OR REPLACE FUNCTION public.admin_list_payments(p_status TEXT DEFAULT 'all')
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_clean_status TEXT := lower(trim(COALESCE(p_status, 'all')));
+    v_result JSONB;
+BEGIN
+    IF NOT public.is_admin() THEN
+        RAISE EXCEPTION 'Akses ditolak: Hanya admin yang dapat melihat riwayat pembayaran';
+    END IF;
+
+    SELECT COALESCE(jsonb_agg(
+        jsonb_build_object(
+            'id', pay.id,
+            'user_id', pay.user_id,
+            'amount', pay.amount,
+            'duration_days', pay.duration_days,
+            'sender_name', pay.sender_name,
+            'sender_bank', pay.sender_bank,
+            'proof_path', pay.proof_path,
+            'status', pay.status,
+            'admin_note', pay.admin_note,
+            'reviewed_at', pay.reviewed_at,
+            'created_at', pay.created_at,
+            'user', jsonb_build_object(
+                'username', COALESCE(p.username, 'unknown'),
+                'display_name', COALESCE(p.display_name, 'Pengguna')
+            )
+        ) ORDER BY pay.created_at DESC
+    ), '[]'::jsonb)
+    INTO v_result
+    FROM public.payments pay
+    LEFT JOIN public.profiles p ON p.id = pay.user_id
+    WHERE (
+        v_clean_status = 'all' 
+        OR pay.status = v_clean_status
+    );
+
+    RETURN v_result;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.admin_list_payments(TEXT) TO authenticated;
+
