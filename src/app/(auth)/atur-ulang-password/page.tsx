@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 export default function AturUlangPasswordPage() {
   const router = useRouter();
@@ -15,7 +16,7 @@ export default function AturUlangPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword.length < 6) {
       toast.error("Kata sandi minimal 6 karakter.");
@@ -25,13 +26,26 @@ export default function AturUlangPasswordPage() {
       toast.error("Konfirmasi kata sandi tidak cocok.");
       return;
     }
+
     setLoading(true);
-    // UI demo simulation for Sprint 1
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        toast.error(`Gagal mengubah kata sandi: ${error.message}`);
+        return;
+      }
+
       setSuccess(true);
       toast.success("Kata sandi berhasil diperbarui!");
-    }, 700);
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : "Terjadi kesalahan";
+      toast.error(`Terjadi kesalahan: ${errorMsg}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

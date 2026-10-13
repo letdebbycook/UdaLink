@@ -6,12 +6,17 @@ import { Check, X, Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 export default function DaftarPage() {
+  const router = useRouter();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
 
   // Reserved words per PRD
   const reservedWords = [
@@ -19,24 +24,75 @@ export default function DaftarPage() {
     "bantuan", "tentang", "harga", "syarat", "privasi", "login", "register", "akun"
   ];
 
-  // Client-side username availability indicator
   const cleanUsername = username.toLowerCase().trim();
   const isValidFormat = /^[a-z0-9_]{3,30}$/.test(cleanUsername);
   const isReserved = reservedWords.includes(cleanUsername);
-  const isAvailable = isValidFormat && !isReserved;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Cek ketersediaan username ke database dengan debounce
+  React.useEffect(() => {
+    if (!cleanUsername || cleanUsername.length < 3 || !isValidFormat || isReserved) {
+      setIsAvailable(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setCheckingUsername(true);
+      try {
+        const { data, error } = await supabase.rpc("is_username_available", {
+          p_username: cleanUsername,
+        });
+        if (error) throw error;
+        setIsAvailable(Boolean(data));
+      } catch (err) {
+        console.error("Gagal memeriksa username:", err);
+        setIsAvailable(null);
+      } finally {
+        setCheckingUsername(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [cleanUsername, isValidFormat, isReserved]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAvailable) {
       toast.error("Silakan gunakan username yang valid dan tersedia.");
       return;
     }
+
+    if (password.length < 6) {
+      toast.error("Kata sandi minimal 6 karakter.");
+      return;
+    }
+
     setLoading(true);
-    // UI demo simulation for Sprint 1
-    setTimeout(() => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username: cleanUsername,
+            display_name: cleanUsername,
+          },
+        },
+      });
+
+      if (error) {
+        toast.error(`Pendaftaran gagal: ${error.message}`);
+        return;
+      }
+
+      toast.success("Pendaftaran berhasil! Mengarahkan ke etalasemu...");
+      router.push("/dashboard");
+      router.refresh();
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : "Terjadi kesalahan";
+      toast.error(`Terjadi kesalahan: ${errorMsg}`);
+    } finally {
       setLoading(false);
-      toast.success("Pendaftaran berhasil! (Simulasi UI Sprint 1)");
-    }, 800);
+    }
   };
 
   return (
