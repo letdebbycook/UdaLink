@@ -261,6 +261,13 @@ BEGIN
 END;
 $$;
 
+-- Hak akses eksekusi fungsi RPC
+GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_pro(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.can_add_product() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_username_available(TEXT) TO anon, authenticated;
+
+
 -- ==============================================================================
 -- 4. TRIGGER OTOMATISASI
 -- ==============================================================================
@@ -584,6 +591,13 @@ CREATE POLICY "app_settings_update_admin" ON public.app_settings
     FOR UPDATE TO authenticated
     USING (public.is_admin())
     WITH CHECK (public.is_admin());
+
+-- Hak akses schema dan tabel publik
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT SELECT ON public.app_settings TO anon, authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+
 
 -- ==============================================================================
 -- 6. STORAGE BUCKETS & POLICIES

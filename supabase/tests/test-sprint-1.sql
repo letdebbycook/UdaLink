@@ -82,8 +82,8 @@ BEGIN
 
     -- 6. Uji Simulasi Nomor Produk Otomatis (Sequential Numbering via Trigger)
     -- Buat baris dummy di auth.users untuk testing transaction rollback
-    INSERT INTO auth.users (id, email)
-    VALUES (v_test_uid, 'test_be_sprint1@udalink.internal')
+    INSERT INTO auth.users (id, email, aud, role)
+    VALUES (v_test_uid, 'test_be_sprint1@udalink.internal', 'authenticated', 'authenticated')
     ON CONFLICT (id) DO NOTHING;
 
     -- Trigger handle_new_user() harus otomatis membuat profiles & memberships
