@@ -73,6 +73,35 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
+  // 4. Cek akun dinonaktifkan (is_suspended) untuk user yang sudah login di rute terproteksi
+  const isProtectedRoute = pathname.startsWith("/dashboard") || pathname.startsWith("/admin");
+  const isSuspendedPage = pathname === "/akun-dinonaktifkan";
+
+  if (user && isProtectedRoute && !isSuspendedPage) {
+    const { data: membership } = await supabase
+      .from("memberships")
+      .select("is_suspended")
+      .eq("user_id", user.id)
+      .single();
+
+    if (membership?.is_suspended === true) {
+      return NextResponse.redirect(new URL("/akun-dinonaktifkan", request.url));
+    }
+  }
+
+  // 5. Jika sudah login dan tidak suspended, cegah akses ke halaman dinonaktifkan
+  if (user && isSuspendedPage) {
+    const { data: membership } = await supabase
+      .from("memberships")
+      .select("is_suspended")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!membership?.is_suspended) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+  }
+
   return response;
 }
 
@@ -82,5 +111,6 @@ export const config = {
     "/admin/:path*",
     "/masuk",
     "/daftar",
+    "/akun-dinonaktifkan",
   ],
 };
