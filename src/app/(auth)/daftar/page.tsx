@@ -140,9 +140,13 @@ export default function DaftarPage() {
                 <span className="text-red-500 font-medium">Username ini sudah dicadangkan sistem.</span>
               ) : !isValidFormat ? (
                 <span>3–30 karakter (huruf kecil, angka, atau garis bawah _).</span>
-              ) : (
+              ) : checkingUsername ? (
+                <span className="text-[#94A3B8]">Memeriksa ketersediaan...</span>
+              ) : isAvailable === false ? (
+                <span className="text-red-500 font-medium">Username ini sudah dipakai.</span>
+              ) : isAvailable === true ? (
                 <span className="text-emerald-600 font-medium">Username tersedia!</span>
-              )}
+              ) : null}
             </p>
           )}
         </div>
