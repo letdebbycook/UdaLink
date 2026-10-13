@@ -125,16 +125,20 @@ async function verify() {
     ['.gitignore',    'Exclusi .env.local dari Git'],
   ];
   for (const [file, desc] of checks) {
-    const fullPath = path.join('D:\\magang\\task\\projek internal\\udalink', file);
+    const fullPath = path.resolve(process.cwd(), file);
     if (fs.existsSync(fullPath)) ok(`${file} — ${desc}`);
     else fail(`${file} tidak ditemukan`, desc);
   }
 
   // Cek .env.local punya nilai Supabase
-  const envLocal = path.join('D:\\magang\\task\\projek internal\\udalink', '.env.local');
+  const envLocal = path.resolve(process.cwd(), '.env.local');
   if (fs.existsSync(envLocal)) {
     const envContent = fs.readFileSync(envLocal, 'utf8');
-    if (envContent.includes('NEXT_PUBLIC_SUPABASE_URL') && envContent.includes('NEXT_PUBLIC_SUPABASE_ANON_KEY')) {
+    if (
+      envContent.includes('NEXT_PUBLIC_SUPABASE_URL') &&
+      (envContent.includes('NEXT_PUBLIC_SUPABASE_ANON_KEY') ||
+        envContent.includes('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'))
+    ) {
       ok('.env.local — variabel Supabase terkonfigurasi');
     } else {
       fail('.env.local ada tapi variabel Supabase belum diisi');
