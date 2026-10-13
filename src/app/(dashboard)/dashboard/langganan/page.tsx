@@ -121,10 +121,9 @@ export default function LanggananPage() {
         p_sender_name: senderName.trim(),
         p_sender_bank: senderBank.trim(),
         p_proof_path: filePath,
-        p_duration_days: plan?.pro_duration_days ?? 30,
       });
 
-      if (rpcErr) throw rpcErr;
+      if (rpcErr) throw new Error(rpcErr.message);
 
       toast.success("Bukti transfer berhasil dikirim! Menunggu konfirmasi admin.");
       setSenderName("");
@@ -132,7 +131,8 @@ export default function LanggananPage() {
       setProofPreview(null);
       loadData();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Gagal mengirim pembayaran");
+      const msg = err instanceof Error ? err.message : "Gagal mengirim pembayaran";
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }

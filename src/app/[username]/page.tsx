@@ -4,6 +4,8 @@ import { Metadata } from "next";
 import { getPublicPage } from "@/lib/data/public-page";
 import { ShowcaseView } from "@/components/showcase/ShowcaseView";
 
+export const dynamic = "force-dynamic";
+
 interface PageProps {
   params: Promise<{ username: string }>;
 }

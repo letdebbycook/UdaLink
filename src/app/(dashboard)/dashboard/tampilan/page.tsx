@@ -158,6 +158,26 @@ export default function TampilanPage() {
         setSelectedTheme("hijau");
       }
 
+      // Sanitasi nomor WhatsApp agar sesuai constraint database (^62[0-9]+$)
+      let sanitizedWa: string | null = null;
+      if (whatsapp.trim()) {
+        const digits = whatsapp.replace(/[^0-9]/g, "");
+        if (digits) {
+          if (digits.startsWith("0")) {
+            sanitizedWa = "62" + digits.slice(1);
+          } else if (digits.startsWith("62")) {
+            sanitizedWa = digits;
+          } else {
+            sanitizedWa = "62" + digits;
+          }
+        }
+      }
+
+      // Sanitasi Instagram dan TikTok (tanpa awalan '@')
+      const sanitizedIg = instagram.replace(/^@+/, "").trim() || null;
+      const sanitizedTt = tiktok.replace(/^@+/, "").trim() || null;
+      const sanitizedYt = youtube.trim() || null;
+
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -165,19 +185,24 @@ export default function TampilanPage() {
           bio: bio.trim() || null,
           avatar_url: avatarUrl,
           theme: themeToSave,
-          whatsapp: whatsapp.trim() || null,
-          instagram: instagram.trim() || null,
-          tiktok: tiktok.trim() || null,
-          youtube: youtube.trim() || null,
+          whatsapp: sanitizedWa,
+          instagram: sanitizedIg,
+          tiktok: sanitizedTt,
+          youtube: sanitizedYt,
         })
         .eq("id", user.id);
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
+
+      if (sanitizedWa) setWhatsapp(sanitizedWa);
+      if (sanitizedIg) setInstagram(sanitizedIg);
+      if (sanitizedTt) setTiktok(sanitizedTt);
 
       toast.success("Pengaturan tampilan etalase berhasil disimpan!");
       loadData();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Gagal menyimpan tampilan");
+      const msg = err instanceof Error ? err.message : "Gagal menyimpan tampilan";
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
