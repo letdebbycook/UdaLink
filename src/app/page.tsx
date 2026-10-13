@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PhoneMockup } from "@/components/landing/PhoneMockup";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
+import { LandingNavbarAuth } from "@/components/landing/LandingNavbarAuth";
 
 export default function LandingPage() {
   return (
@@ -44,19 +45,7 @@ export default function LandingPage() {
             </Link>
           </nav>
 
-          <div className="flex items-center gap-3">
-            <Link href="/masuk">
-              <Button variant="ghost" size="sm" className="font-semibold text-xs sm:text-sm">
-                Masuk
-              </Button>
-            </Link>
-            <Link href="/daftar">
-              <Button size="sm" className="font-semibold text-xs sm:text-sm gap-1.5 shadow-sm shadow-[#16A34A]/20">
-                <span>Buat Etalase Gratis</span>
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Button>
-            </Link>
-          </div>
+          <LandingNavbarAuth />
         </div>
       </header>
 

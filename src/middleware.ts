@@ -68,8 +68,8 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // 3. Jika sudah login, cegah buka halaman /masuk atau /daftar
-  if (user && (pathname === "/masuk" || pathname === "/daftar")) {
+  // 3. Jika sudah login, cegah buka halaman /masuk
+  if (user && pathname === "/masuk") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
