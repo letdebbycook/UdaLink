@@ -54,28 +54,53 @@ export default function AdminPembayaranPage() {
   const fetchPayments = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // 1. Coba panggil RPC admin_list_payments (patch backend terbaru)
+      const { data: rpcData, error: rpcErr } = await supabase.rpc("admin_list_payments", {
+        p_status: "all",
+      });
+
+      if (!rpcErr && rpcData) {
+        setPayments(rpcData as PaymentItem[]);
+        return;
+      }
+
+      // 2. Fallback: Query tabel payments secara langsung tanpa ketergantungan relasi schema cache
+      const { data: payData, error: payErr } = await supabase
         .from("payments")
-        .select(`
-          id,
-          user_id,
-          amount,
-          duration_days,
-          sender_name,
-          sender_bank,
-          proof_path,
-          status,
-          admin_note,
-          reviewed_at,
-          created_at,
-          user:profiles!payments_user_id_fkey(username, display_name)
-        `)
+        .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      setPayments((data as unknown as PaymentItem[]) || []);
+      if (payErr) throw payErr;
+
+      if (!payData || payData.length === 0) {
+        setPayments([]);
+        return;
+      }
+
+      // Ambil data profil terkait untuk menampilkan username & display_name
+      const userIds = Array.from(new Set(payData.map((p) => p.user_id)));
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, username, display_name")
+        .in("id", userIds);
+
+      const profileMap = new Map((profilesData || []).map((prof) => [prof.id, prof]));
+
+      const combined: PaymentItem[] = payData.map((p) => ({
+        ...p,
+        user: profileMap.get(p.user_id)
+          ? {
+              username: profileMap.get(p.user_id)!.username,
+              display_name: profileMap.get(p.user_id)!.display_name,
+            }
+          : undefined,
+      }));
+
+      setPayments(combined);
     } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : "Terjadi kesalahan";
+      const errorMsg =
+        (err as { message?: string })?.message ||
+        (err instanceof Error ? err.message : "Terjadi kesalahan saat memuat pembayaran");
       toast.error(`Gagal memuat data pembayaran: ${errorMsg}`);
     } finally {
       setLoading(false);
