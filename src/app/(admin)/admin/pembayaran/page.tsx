@@ -64,6 +64,13 @@ export default function AdminPembayaranPage() {
         return;
       }
 
+      // Jika RPC gagal karena akses ditolak, langsung throw (fallback juga akan gagal)
+      if (rpcErr?.message?.includes("Akses ditolak") || rpcErr?.message?.includes("permission denied")) {
+        throw rpcErr;
+      }
+
+      console.warn("RPC admin_list_payments gagal, mencoba fallback:", rpcErr?.message);
+
       // 2. Fallback: Query tabel payments secara langsung tanpa ketergantungan relasi schema cache
       const { data: payData, error: payErr } = await supabase
         .from("payments")
@@ -98,9 +105,18 @@ export default function AdminPembayaranPage() {
 
       setPayments(combined);
     } catch (err: unknown) {
-      const errorMsg =
-        (err as { message?: string })?.message ||
-        (err instanceof Error ? err.message : "Terjadi kesalahan saat memuat pembayaran");
+      console.error("fetchPayments error:", err);
+      const pgErr = err as { message?: string; details?: string; hint?: string; code?: string };
+      let errorMsg = pgErr?.message || (err instanceof Error ? err.message : "Terjadi kesalahan tidak diketahui");
+
+      if (errorMsg.includes("Akses ditolak") || errorMsg.includes("permission denied") || pgErr?.code === "42501") {
+        errorMsg = "Akun ini tidak memiliki akses admin. Pastikan role admin sudah diatur di database.";
+      }
+
+      if (pgErr?.hint) {
+        errorMsg += ` (${pgErr.hint})`;
+      }
+
       toast.error(`Gagal memuat data pembayaran: ${errorMsg}`);
     } finally {
       setLoading(false);

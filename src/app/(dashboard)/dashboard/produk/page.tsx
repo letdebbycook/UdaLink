@@ -39,7 +39,7 @@ export default function ProdukPage() {
   const [formPrice, setFormPrice] = useState<string>("");
   const [formCategoryId, setFormCategoryId] = useState<string>("");
   const [formAffiliateUrl, setFormAffiliateUrl] = useState("");
-  const [formMarketplace, setFormMarketplace] = useState<MarketplaceType>("shopee");
+  const [formMarketplace, setFormMarketplace] = useState<MarketplaceType>("lainnya");
   const [formIsActive, setFormIsActive] = useState(true);
   const [formIsFeatured, setFormIsFeatured] = useState(false);
   const [formImageUrl, setFormImageUrl] = useState<string | null>(null);
@@ -141,7 +141,7 @@ export default function ProdukPage() {
     setFormPrice("");
     setFormCategoryId("");
     setFormAffiliateUrl("");
-    setFormMarketplace("shopee");
+    setFormMarketplace("lainnya");
     setFormIsActive(true);
     setFormIsFeatured(false);
     setFormImageUrl(null);
@@ -725,17 +725,19 @@ export default function ProdukPage() {
                   onChange={(e) => handleUrlChange(e.target.value)}
                   required
                 />
-                <div className="flex items-center gap-2 mt-1.5">
-                  <span className="text-xs text-slate-500">Marketplace terdeteksi:</span>
-                  <Badge
-                    variant="outline"
-                    className={`text-xs py-0 ${
-                      MARKETPLACE_CONFIG[formMarketplace]?.badgeClass || ""
-                    }`}
-                  >
-                    {MARKETPLACE_CONFIG[formMarketplace]?.label || "Lainnya"}
-                  </Badge>
-                </div>
+                {formAffiliateUrl.trim().length > 0 && (
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <span className="text-xs text-slate-500">Marketplace terdeteksi:</span>
+                    <Badge
+                      variant="outline"
+                      className={`text-xs py-0 ${
+                        MARKETPLACE_CONFIG[formMarketplace]?.badgeClass || ""
+                      }`}
+                    >
+                      {MARKETPLACE_CONFIG[formMarketplace]?.label || "Lainnya"}
+                    </Badge>
+                  </div>
+                )}
               </div>
 
               {/* Kategori & Harga (2 Kolom) */}

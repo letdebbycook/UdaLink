@@ -62,7 +62,7 @@ export default function DashboardOverviewPage() {
   useEffect(() => { load(); }, [load]);
 
   const etalaseUrl = username ? `${siteUrl}/${username}` : "";
-  const etalaseDisplay = username ? `${siteUrl.replace(/^https?:\/\//, "")}/${username}` : "...";
+  const etalaseDomain = siteUrl.replace(/^https?:\/\//, "");
 
   const handleCopy = () => {
     if (!etalaseUrl) return;
@@ -106,8 +106,15 @@ export default function DashboardOverviewPage() {
             <span className="text-xs font-semibold text-[#16A34A] uppercase tracking-wider">
               Link Etalasemu
             </span>
-            <div className="text-base sm:text-lg font-bold text-[#0F172A] font-mono truncate max-w-xs">
-              {etalaseDisplay}
+            <div className="text-base sm:text-lg font-bold font-mono break-all">
+              {username ? (
+                <>
+                  <span className="text-[#94A3B8] font-normal">{etalaseDomain}/</span>
+                  <span className="text-[#16A34A]">{username}</span>
+                </>
+              ) : (
+                <span className="text-[#94A3B8]">...</span>
+              )}
             </div>
             <p className="text-xs text-[#64748B]">
               Pasang link ini di bio Instagram, TikTok, dan bio YouTube-mu.
