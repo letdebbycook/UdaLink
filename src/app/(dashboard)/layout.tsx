@@ -244,7 +244,7 @@ export default function DashboardLayout({
       </aside>
 
       {/* MAIN CONTENT AREA */}
-      <div className="flex-1 flex flex-col min-w-0 pb-20 md:pb-6">
+      <div className="flex-1 flex flex-col min-w-0 pb-24 md:pb-6">
         {/* Top Header Mobile */}
         <header className="md:hidden h-14 bg-white border-b border-[#E2E8F0] px-4 flex items-center justify-between sticky top-0 z-20">
           <Link href="/dashboard" className="flex items-center gap-2">
@@ -259,7 +259,7 @@ export default function DashboardLayout({
             <Link
               href={etalaseUrl}
               target="_blank"
-              className="text-xs font-semibold text-[#16A34A] bg-[#F0FDF4] px-2.5 py-1.5 rounded-lg border border-[#BBF7D0] flex items-center gap-1"
+              className="text-xs font-semibold text-[#16A34A] bg-[#F0FDF4] px-2.5 py-1.5 rounded-lg border border-[#BBF7D0] flex items-center gap-1 min-h-[36px]"
             >
               <span>Etalase</span>
               <ExternalLink className="h-3 w-3" />
@@ -274,7 +274,7 @@ export default function DashboardLayout({
       </div>
 
       {/* MOBILE BOTTOM NAVIGATION (5 ITEMS) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-[#E2E8F0] flex items-center justify-around z-30 shadow-lg px-2">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[calc(4rem+env(safe-area-inset-bottom,0px))] pb-[env(safe-area-inset-bottom,0px)] bg-white border-t border-[#E2E8F0] flex items-center justify-around z-30 shadow-lg px-2">
         {mobileNavItems.map((item, idx) => {
           const Icon = item.icon;
           const isActive = item.href
@@ -287,7 +287,7 @@ export default function DashboardLayout({
                 key={idx}
                 type="button"
                 onClick={item.action}
-                className="flex flex-col items-center justify-center flex-1 h-full py-1 text-[#64748B] hover:text-[#16A34A] transition-colors"
+                className="flex flex-col items-center justify-center flex-1 h-full py-1 text-[#64748B] hover:text-[#16A34A] active:scale-95 transition-all select-none"
               >
                 <Icon className="h-5 w-5" />
                 <span className="text-[10px] mt-1 font-medium">{item.name}</span>
@@ -300,7 +300,7 @@ export default function DashboardLayout({
               key={idx}
               href={item.href!}
               className={cn(
-                "flex flex-col items-center justify-center flex-1 h-full py-1 transition-colors",
+                "flex flex-col items-center justify-center flex-1 h-full py-1 active:scale-95 transition-all select-none",
                 isActive
                   ? "text-[#16A34A] font-semibold"
                   : "text-[#64748B] hover:text-[#0F172A]"

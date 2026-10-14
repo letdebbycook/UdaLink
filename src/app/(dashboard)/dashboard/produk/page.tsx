@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Package, Plus, Search, Filter, Trash2, Edit2, ExternalLink,
-  Loader2, Sparkles, Upload, Eye, EyeOff, Star, AlertCircle,
+  Loader2, Crown, Upload, Eye, EyeOff, Star, AlertCircle,
   CheckCircle2, ArrowRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -351,7 +351,7 @@ export default function ProdukPage() {
                 size="sm"
                 className="border-[#16A34A] text-[#16A34A] hover:bg-[#F0FDF4] gap-1.5 shrink-0"
               >
-                <Sparkles className="w-4 h-4" />
+                <Crown className="w-4 h-4" />
                 Upgrade ke PRO
               </Button>
             </Link>
@@ -602,32 +602,35 @@ export default function ProdukPage() {
                         <span className="font-bold text-sm text-[#16A34A]">
                           {p.price ? formatRupiah(p.price) : "-"}
                         </span>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => handleToggleActive(p)}
-                            className={`p-1.5 rounded-lg border text-xs ${
+                            className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg border text-xs ${
                               p.is_active
                                 ? "bg-emerald-50 text-[#16A34A] border-emerald-200"
                                 : "bg-slate-100 text-slate-400 border-slate-200"
                             }`}
+                            title={p.is_active ? "Sembunyikan produk" : "Tampilkan produk"}
                           >
-                            {p.is_active ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                            {p.is_active ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                           </button>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => openEditModal(p)}
-                            className="h-7 w-7 p-0 text-slate-600"
+                            className="h-9 w-9 p-0 text-slate-600 hover:bg-slate-100"
+                            title="Edit Produk"
                           >
-                            <Edit2 className="w-3.5 h-3.5" />
+                            <Edit2 className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDeleteProduct(p)}
-                            className="h-7 w-7 p-0 text-red-500"
+                            className="h-9 w-9 p-0 text-red-500 hover:bg-red-50"
+                            title="Hapus Produk"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>

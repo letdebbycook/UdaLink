@@ -7,7 +7,7 @@ import { id as localeId } from "date-fns/locale";
 import {
   Users,
   Search,
-  Sparkles,
+  Star,
   Ban,
   CheckCircle,
   ExternalLink,
@@ -162,121 +162,227 @@ export default function AdminPenggunaPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0] text-[#64748B]">
-                <tr>
-                  <th className="py-3 px-4 font-semibold">Pengguna</th>
-                  <th className="py-3 px-4 font-semibold">Email</th>
-                  <th className="py-3 px-4 font-semibold">Produk</th>
-                  <th className="py-3 px-4 font-semibold">Status Paket</th>
-                  <th className="py-3 px-4 font-semibold">Terdaftar</th>
-                  <th className="py-3 px-4 font-semibold text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#E2E8F0]">
-                {users.map((u) => {
-                  const isBusy = actionLoading === u.id;
-                  return (
-                    <tr key={u.id} className="hover:bg-[#F8FAFC] transition-colors">
-                      <td className="py-3.5 px-4 font-medium text-[#0F172A]">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-semibold">{u.display_name}</span>
+        <div className="space-y-3">
+          {/* Mobile Card View (md:hidden) */}
+          <div className="md:hidden space-y-3">
+            {users.map((u) => {
+              const isBusy = actionLoading === u.id;
+              return (
+                <Card key={u.id} className="border-[#E2E8F0] shadow-xs bg-white">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-semibold text-sm text-[#0F172A] truncate">
+                            {u.display_name}
+                          </span>
                           {u.role === "admin" && (
                             <Badge className="bg-slate-900 text-white text-[9px] py-0 px-1.5">
                               Admin
                             </Badge>
                           )}
                         </div>
-                        <div className="text-[11px] text-[#94A3B8] font-mono">@{u.username}</div>
-                      </td>
+                        <p className="text-[11px] text-[#94A3B8] font-mono">
+                          @{u.username} • {u.email}
+                        </p>
+                      </div>
 
-                      <td className="py-3.5 px-4 text-[#64748B]">
-                        {u.email}
-                      </td>
-
-                      <td className="py-3.5 px-4 font-semibold text-[#0F172A]">
-                        {u.product_count} produk
-                      </td>
-
-                      <td className="py-3.5 px-4">
+                      <div className="shrink-0">
                         {u.is_suspended ? (
-                          <Badge className="bg-red-100 text-red-800">Nonaktif</Badge>
+                          <Badge className="bg-red-100 text-red-800 text-[10px]">Nonaktif</Badge>
                         ) : u.is_pro ? (
-                          <div className="space-y-0.5">
-                            <Badge className="bg-amber-100 text-amber-800 flex items-center gap-1 w-fit">
-                              <Sparkles className="h-3 w-3" />
-                              <span>Pro Aktif</span>
-                            </Badge>
-                            {u.pro_until && (
-                              <p className="text-[10px] text-[#64748B]">
-                                s/d {format(new Date(u.pro_until), "dd MMM yyyy", { locale: localeId })}
-                              </p>
-                            )}
-                          </div>
+                          <Badge className="bg-amber-100 text-amber-800 flex items-center gap-1 text-[10px]">
+                            <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                            <span>Pro Aktif</span>
+                          </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-[#64748B]">Gratis</Badge>
+                          <Badge variant="outline" className="text-[#64748B] text-[10px]">Gratis</Badge>
                         )}
-                      </td>
+                      </div>
+                    </div>
 
-                      <td className="py-3.5 px-4 text-[#64748B] whitespace-nowrap">
-                        {format(new Date(u.created_at), "dd MMM yyyy", { locale: localeId })}
-                      </td>
+                    <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100 text-[#64748B]">
+                      <span>Koleksi: <strong className="text-[#0F172A]">{u.product_count}</strong> produk</span>
+                      <span className="text-[11px]">
+                        Daftar: {format(new Date(u.created_at), "dd MMM yyyy", { locale: localeId })}
+                      </span>
+                    </div>
 
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {/* Tombol Lihat Etalase */}
-                          <Link href={`/${u.username}`} target="_blank">
-                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Buka Etalase">
-                              <ExternalLink className="h-3.5 w-3.5 text-[#64748B]" />
-                            </Button>
-                          </Link>
+                    {u.is_pro && u.pro_until && (
+                      <p className="text-[10px] text-amber-700 bg-amber-50 px-2 py-1 rounded">
+                        Masa aktif Pro s/d {format(new Date(u.pro_until), "dd MMM yyyy", { locale: localeId })}
+                      </p>
+                    )}
 
-                          {/* Tombol Beri / Cabut Pro */}
-                          {u.is_pro ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleTogglePro(u, false)}
-                              disabled={isBusy}
-                              className="h-7 text-[11px] text-amber-700 border-amber-200 hover:bg-amber-50"
-                            >
-                              Cabut Pro
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleTogglePro(u, true)}
-                              disabled={isBusy}
-                              className="h-7 text-[11px] text-emerald-700 border-emerald-200 hover:bg-emerald-50"
-                            >
-                              +30 Hari Pro
-                            </Button>
-                          )}
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 gap-2 flex-wrap">
+                      <Link href={`/${u.username}`} target="_blank">
+                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1 min-h-[36px]">
+                          <ExternalLink className="h-3.5 w-3.5 text-[#64748B]" />
+                          <span>Etalase</span>
+                        </Button>
+                      </Link>
 
-                          {/* Tombol Suspend / Unsuspend */}
+                      <div className="flex items-center gap-1.5">
+                        {u.is_pro ? (
                           <Button
                             size="sm"
-                            variant="ghost"
-                            onClick={() => handleToggleSuspend(u)}
+                            variant="outline"
+                            onClick={() => handleTogglePro(u, false)}
                             disabled={isBusy}
-                            className={`h-7 text-[11px] ${
-                              u.is_suspended
-                                ? "text-emerald-600 hover:bg-emerald-50"
-                                : "text-red-600 hover:bg-red-50"
-                            }`}
+                            className="h-8 text-xs text-amber-700 border-amber-200 hover:bg-amber-50 min-h-[36px]"
                           >
-                            {u.is_suspended ? "Aktifkan" : "Tangguhkan"}
+                            Cabut Pro
                           </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleTogglePro(u, true)}
+                            disabled={isBusy}
+                            className="h-8 text-xs text-emerald-700 border-emerald-200 hover:bg-emerald-50 min-h-[36px]"
+                          >
+                            +30 Hari Pro
+                          </Button>
+                        )}
+
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleToggleSuspend(u)}
+                          disabled={isBusy}
+                          className={`h-8 text-xs min-h-[36px] ${
+                            u.is_suspended
+                              ? "text-emerald-600 hover:bg-emerald-50"
+                              : "text-red-600 hover:bg-red-50"
+                          }`}
+                        >
+                          {u.is_suspended ? "Aktifkan" : "Tangguhkan"}
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Desktop Table View (hidden md:block) */}
+          <div className="hidden md:block bg-white rounded-xl border border-[#E2E8F0] overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0] text-[#64748B]">
+                  <tr>
+                    <th className="py-3 px-4 font-semibold">Pengguna</th>
+                    <th className="py-3 px-4 font-semibold">Email</th>
+                    <th className="py-3 px-4 font-semibold">Produk</th>
+                    <th className="py-3 px-4 font-semibold">Status Paket</th>
+                    <th className="py-3 px-4 font-semibold">Terdaftar</th>
+                    <th className="py-3 px-4 font-semibold text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#E2E8F0]">
+                  {users.map((u) => {
+                    const isBusy = actionLoading === u.id;
+                    return (
+                      <tr key={u.id} className="hover:bg-[#F8FAFC] transition-colors">
+                        <td className="py-3.5 px-4 font-medium text-[#0F172A]">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold">{u.display_name}</span>
+                            {u.role === "admin" && (
+                              <Badge className="bg-slate-900 text-white text-[9px] py-0 px-1.5">
+                                Admin
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-[#94A3B8] font-mono">@{u.username}</div>
+                        </td>
+
+                        <td className="py-3.5 px-4 text-[#64748B]">
+                          {u.email}
+                        </td>
+
+                        <td className="py-3.5 px-4 font-semibold text-[#0F172A]">
+                          {u.product_count} produk
+                        </td>
+
+                        <td className="py-3.5 px-4">
+                          {u.is_suspended ? (
+                            <Badge className="bg-red-100 text-red-800">Nonaktif</Badge>
+                          ) : u.is_pro ? (
+                            <div className="space-y-0.5">
+                              <Badge className="bg-amber-100 text-amber-800 flex items-center gap-1 w-fit">
+                                <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                                <span>Pro Aktif</span>
+                              </Badge>
+                              {u.pro_until && (
+                                <p className="text-[10px] text-[#64748B]">
+                                  s/d {format(new Date(u.pro_until), "dd MMM yyyy", { locale: localeId })}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <Badge variant="outline" className="text-[#64748B]">Gratis</Badge>
+                          )}
+                        </td>
+
+                        <td className="py-3.5 px-4 text-[#64748B] whitespace-nowrap">
+                          {format(new Date(u.created_at), "dd MMM yyyy", { locale: localeId })}
+                        </td>
+
+                        <td className="py-3.5 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {/* Tombol Lihat Etalase */}
+                            <Link href={`/${u.username}`} target="_blank">
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Buka Etalase">
+                                <ExternalLink className="h-3.5 w-3.5 text-[#64748B]" />
+                              </Button>
+                            </Link>
+
+                            {/* Tombol Beri / Cabut Pro */}
+                            {u.is_pro ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleTogglePro(u, false)}
+                                disabled={isBusy}
+                                className="h-7 text-[11px] text-amber-700 border-amber-200 hover:bg-amber-50"
+                              >
+                                Cabut Pro
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleTogglePro(u, true)}
+                                disabled={isBusy}
+                                className="h-7 text-[11px] text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                              >
+                                +30 Hari Pro
+                              </Button>
+                            )}
+
+                            {/* Tombol Suspend / Unsuspend */}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleToggleSuspend(u)}
+                              disabled={isBusy}
+                              className={`h-7 text-[11px] ${
+                                u.is_suspended
+                                  ? "text-emerald-600 hover:bg-emerald-50"
+                                  : "text-red-600 hover:bg-red-50"
+                              }`}
+                            >
+                              {u.is_suspended ? "Aktifkan" : "Tangguhkan"}
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

@@ -56,7 +56,7 @@ export default function LandingPage() {
             {/* Left Content */}
             <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#DCFCE7] text-[#15803D] text-xs font-semibold border border-[#BBF7D0]">
-                <Sparkles className="h-3.5 w-3.5 fill-[#15803D]" />
+                <ShieldCheck className="h-4 w-4 text-[#16A34A]" />
                 <span>Dirancang Khusus Affiliator Indonesia</span>
               </div>
 
@@ -70,7 +70,7 @@ export default function LandingPage() {
 
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 pt-2">
                 <Link href="/daftar" className="w-full sm:w-auto">
-                  <Button size="lg" className="w-full sm:w-auto h-12 px-7 text-base font-bold gap-2 shadow-lg shadow-[#16A34A]/25">
+                  <Button size="lg" className="w-full sm:w-auto h-12 px-7 text-base font-bold gap-2 shadow-md shadow-[#16A34A]/20">
                     <span>Buat Etalase Gratis</span>
                     <ArrowRight className="h-4 w-4" />
                   </Button>
@@ -231,7 +231,7 @@ export default function LandingPage() {
 
             <div className="p-6 rounded-2xl border border-[#E2E8F0] hover:border-[#16A34A]/50 hover:shadow-md transition-all">
               <div className="h-10 w-10 rounded-xl bg-[#F0FDF4] text-[#16A34A] flex items-center justify-center mb-4">
-                <Sparkles className="h-5 w-5" />
+                <ShoppingBag className="h-5 w-5" />
               </div>
               <h3 className="font-bold text-[#0F172A] text-base mb-1.5">
                 Banner Promo & Unggulan
@@ -328,8 +328,8 @@ export default function LandingPage() {
             {/* Paket Pro */}
             <div className="bg-white rounded-3xl border-2 border-[#16A34A] p-8 flex flex-col justify-between shadow-lg relative">
               <div className="absolute -top-3.5 right-6">
-                <Badge variant="pro" className="px-3 py-1 text-xs uppercase tracking-wider">
-                  PALING POPULER
+                <Badge variant="pro" className="px-3 py-1 text-xs uppercase tracking-wider font-bold">
+                  REKOMENDASI
                 </Badge>
               </div>
 

@@ -7,7 +7,8 @@ import {
   Search,
   ExternalLink,
   MessageCircle,
-  Sparkles,
+  Award,
+  Star,
   ShoppingBag,
   Share2,
   X,
@@ -126,7 +127,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
           <button
             type="button"
             onClick={handleShare}
-            className="p-2 rounded-full transition-all cursor-pointer shadow-xs"
+            className="p-2.5 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-full transition-all cursor-pointer shadow-xs active:scale-95"
             style={{
               backgroundColor: theme.card,
               color: theme.text,
@@ -147,7 +148,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
         <div className="px-5 pt-1 pb-4 flex flex-col items-center text-center">
           <div className="relative mb-3">
             <div
-              className="h-24 w-24 rounded-full overflow-hidden border-3 shadow-md relative"
+              className="h-24 w-24 rounded-full overflow-hidden border-[3px] shadow-md relative"
               style={{ borderColor: theme.button }}
             >
               {profile.avatar_url ? (
@@ -173,7 +174,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                 className="absolute -bottom-1 -right-1 p-1 rounded-full bg-amber-400 text-slate-900 border-2 border-white shadow-xs"
                 title="Akun Terverifikasi Pro"
               >
-                <Sparkles className="h-3.5 w-3.5 fill-slate-900" />
+                <Check className="h-3.5 w-3.5 stroke-[3]" />
               </div>
             )}
           </div>
@@ -202,13 +203,13 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
           )}
 
           {/* Social Media Links Row */}
-          <div className="flex items-center gap-3 mt-4">
+          <div className="flex items-center gap-2.5 mt-4">
             {profile.instagram && (
               <a
                 href={`https://instagram.com/${profile.instagram.replace(/^@/, "")}`}
                 target="_blank"
                 rel="noreferrer"
-                className="p-2 rounded-xl transition-transform hover:scale-110 shadow-xs"
+                className="p-2.5 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl transition-transform hover:scale-110 active:scale-95 shadow-xs"
                 style={{
                   backgroundColor: theme.card,
                   color: theme.text,
@@ -229,7 +230,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                 href={`https://tiktok.com/@${profile.tiktok.replace(/^@/, "")}`}
                 target="_blank"
                 rel="noreferrer"
-                className="p-2 rounded-xl transition-transform hover:scale-110 shadow-xs"
+                className="p-2.5 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl transition-transform hover:scale-110 active:scale-95 shadow-xs"
                 style={{
                   backgroundColor: theme.card,
                   color: theme.text,
@@ -248,7 +249,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                 href={profile.youtube}
                 target="_blank"
                 rel="noreferrer"
-                className="p-2 rounded-xl transition-transform hover:scale-110 shadow-xs"
+                className="p-2.5 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl transition-transform hover:scale-110 active:scale-95 shadow-xs"
                 style={{
                   backgroundColor: theme.card,
                   color: theme.text,
@@ -268,7 +269,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                 href={`https://wa.me/${profile.whatsapp}`}
                 target="_blank"
                 rel="noreferrer"
-                className="p-2 rounded-xl transition-transform hover:scale-110 shadow-xs"
+                className="p-2.5 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl transition-transform hover:scale-110 active:scale-95 shadow-xs"
                 style={{
                   backgroundColor: theme.card,
                   color: theme.text,
@@ -404,7 +405,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
         {!searchQuery && selectedCategory === "all" && featuredProducts.length > 0 && (
           <div className="px-4 py-3">
             <div className="flex items-center gap-1.5 mb-2.5">
-              <Sparkles className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
+              <Award className="h-4 w-4 text-amber-500" />
               <h2
                 className="text-xs font-bold uppercase tracking-wider"
                 style={{ color: theme.text }}
@@ -610,7 +611,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                         href={`/go/${prod.id}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="w-full h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-[0.98]"
+                        className="w-full h-10 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-[0.98]"
                         style={{
                           backgroundColor: theme.button,
                           color: theme.buttonText,
@@ -650,7 +651,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
             )},%20saya%20mau%20tanya%20tentang%20produk%20di%20etalase%20kamu`}
             target="_blank"
             rel="noreferrer"
-            className="fixed bottom-5 right-5 sm:absolute sm:bottom-6 sm:right-6 h-13 w-13 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all z-40 border-2 border-white"
+            className="fixed bottom-5 right-5 sm:absolute sm:bottom-6 sm:right-6 h-14 w-14 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all z-40 border-2 border-white"
             title="Chat di WhatsApp"
           >
             <MessageCircle className="h-6 w-6 fill-white" />

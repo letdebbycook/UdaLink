@@ -44,8 +44,9 @@ export function LandingNavbarAuth() {
           </Button>
         </Link>
         <Link href="/daftar">
-          <Button size="sm" className="font-semibold text-xs sm:text-sm gap-1.5 shadow-sm shadow-[#16A34A]/20">
-            <span>Buat Etalase Gratis</span>
+          <Button size="sm" className="font-semibold text-xs sm:text-sm gap-1.5 shadow-sm shadow-[#16A34A]/20 min-h-[38px]">
+            <span className="hidden sm:inline">Buat Etalase Gratis</span>
+            <span className="sm:hidden">Daftar</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </Button>
         </Link>

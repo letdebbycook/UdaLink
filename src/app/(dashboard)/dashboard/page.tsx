@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import {
   Copy, ExternalLink, Package, MousePointerClick,
-  Sparkles, CheckCircle2, Circle, Loader2, TrendingUp,
+  ShieldCheck, CheckCircle2, Circle, Loader2, TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -193,12 +193,12 @@ export default function DashboardOverviewPage() {
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-[#64748B]">Status Paket</span>
-              <Sparkles className={`h-4 w-4 ${isPro ? "text-amber-500" : "text-[#94A3B8]"}`} />
+              <ShieldCheck className={`h-4 w-4 ${isPro ? "text-amber-500" : "text-[#94A3B8]"}`} />
             </div>
             <div className="mt-2 flex items-center gap-2">
               {isPro ? (
-                <Badge className="bg-amber-100 text-amber-800 gap-1">
-                  <Sparkles className="h-3 w-3" />
+                <Badge className="bg-amber-100 text-amber-800 gap-1 font-semibold">
+                  <ShieldCheck className="h-3 w-3" />
                   PRO AKTIF
                 </Badge>
               ) : (
@@ -219,31 +219,86 @@ export default function DashboardOverviewPage() {
         </Card>
       </div>
 
-      {/* Checklist Memulai */}
+      {/* 5 Produk Terlaris (PRD Bagian 7 & 8) */}
       <Card>
         <CardContent className="p-5 space-y-3">
-          <h3 className="font-semibold text-sm text-[#0F172A]">Checklist Memulai Etalase</h3>
-          <div className="space-y-2.5">
-            {checklist.map((item, i) => (
-              <div key={i} className="flex items-center gap-2.5">
-                {item.done ? (
-                  <CheckCircle2 className="h-4 w-4 text-[#16A34A] shrink-0" />
-                ) : (
-                  <Circle className="h-4 w-4 text-[#CBD5E1] shrink-0" />
-                )}
-                <span
-                  className={`text-xs ${item.done
-                    ? "text-[#94A3B8] line-through"
-                    : "text-[#374151] font-medium"
-                    }`}
-                >
-                  {item.label}
-                </span>
-              </div>
-            ))}
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-sm text-[#0F172A] flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-[#16A34A]" />
+              <span>5 Produk Terlaris</span>
+            </h3>
+            <Link
+              href="/dashboard/statistik"
+              className="text-xs text-[#16A34A] font-medium hover:underline"
+            >
+              Lihat Statistik Lengkap →
+            </Link>
           </div>
+
+          {!stats?.products_stats || stats.products_stats.length === 0 ? (
+            <div className="py-6 text-center text-xs text-[#64748B]">
+              Belum ada data klik produk. Pasang link etalase di bio untuk mulai memantau produk terlaris!
+            </div>
+          ) : (
+            <div className="divide-y divide-[#E2E8F0]">
+              {stats.products_stats.slice(0, 5).map((prod) => (
+                <div key={prod.product_id} className="py-2.5 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="font-bold text-xs text-[#16A34A] w-6 shrink-0">
+                      #{prod.number}
+                    </span>
+                    <div className="w-9 h-9 rounded-lg bg-slate-100 overflow-hidden relative shrink-0 border border-slate-200">
+                      {prod.image_url ? (
+                        <img src={prod.image_url} alt={prod.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-400">
+                          <Package className="w-4 h-4" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-[#0F172A] truncate">{prod.name}</p>
+                      <p className="text-[11px] text-[#64748B] capitalize">{prod.marketplace}</p>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="text-xs font-bold text-[#16A34A] bg-[#F0FDF4] border-[#BBF7D0] shrink-0">
+                    {prod.click_count} klik
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Checklist Memulai (Hilang jika semua langkah selesai sesuai PRD) */}
+      {!checklist.every((item) => item.done) && (
+        <Card>
+          <CardContent className="p-5 space-y-3">
+            <h3 className="font-semibold text-sm text-[#0F172A]">Checklist Memulai Etalase</h3>
+            <div className="space-y-2.5">
+              {checklist.map((item, i) => (
+                <div key={i} className="flex items-center gap-2.5">
+                  {item.done ? (
+                    <CheckCircle2 className="h-4 w-4 text-[#16A34A] shrink-0" />
+                  ) : (
+                    <Circle className="h-4 w-4 text-[#CBD5E1] shrink-0" />
+                  )}
+                  <span
+                    className={`text-xs ${
+                      item.done
+                        ? "text-[#94A3B8] line-through"
+                        : "text-[#374151] font-medium"
+                    }`}
+                  >
+                    {item.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

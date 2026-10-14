@@ -97,18 +97,45 @@ export default function AdminLayout({
       </aside>
 
       {/* MOBILE HEADER ADMIN */}
-      <header className="md:hidden h-14 bg-[#0F172A] text-white px-4 flex items-center justify-between sticky top-0 z-20">
-        <div className="flex items-center gap-2">
-          <Shield className="h-5 w-5 text-emerald-400" />
-          <span className="font-bold text-sm tracking-wide">UdaLink Panel Admin</span>
+      <header className="md:hidden bg-[#0F172A] text-white sticky top-0 z-20 border-b border-slate-800 shadow-sm">
+        <div className="h-14 px-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-emerald-400" />
+            <span className="font-bold text-sm tracking-wide">UdaLink Panel Admin</span>
+          </div>
+          <Link
+            href="/dashboard"
+            className="text-xs text-slate-300 bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700 flex items-center gap-1 min-h-[36px]"
+          >
+            <ArrowLeft className="h-3 w-3" />
+            <span>Dashboard</span>
+          </Link>
         </div>
-        <Link
-          href="/dashboard"
-          className="text-xs text-slate-300 bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700 flex items-center gap-1"
-        >
-          <ArrowLeft className="h-3 w-3" />
-          <span>Dashboard</span>
-        </Link>
+
+        {/* Mobile Navigation Sub-bar */}
+        <div className="flex items-center gap-1.5 px-3 py-2 overflow-x-auto no-scrollbar border-t border-slate-800/80 bg-[#0F172A]">
+          {adminNav.map((item) => {
+            const Icon = item.icon;
+            const isActive =
+              pathname === item.href ||
+              (item.href !== "/admin" && pathname.startsWith(item.href));
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors min-h-[36px] active:scale-95 select-none",
+                  isActive
+                    ? "bg-[#16A34A] text-white font-semibold"
+                    : "text-slate-300 hover:text-white hover:bg-slate-800"
+                )}
+              >
+                <Icon className="h-3.5 w-3.5 shrink-0" />
+                <span>{item.name}</span>
+              </Link>
+            );
+          })}
+        </div>
       </header>
 
       {/* MAIN CONTENT AREA */}

@@ -42,7 +42,7 @@ export function PhoneMockup() {
               N
             </div>
             <div className="absolute -bottom-1 -right-1 bg-amber-400 text-slate-900 p-0.5 rounded-full border border-white">
-              <Sparkles className="h-3 w-3 fill-slate-900" />
+              <Check className="h-3 w-3 stroke-[3]" />
             </div>
           </div>
           <h4 className="font-bold text-sm text-[#0F172A] mt-1.5 leading-tight">

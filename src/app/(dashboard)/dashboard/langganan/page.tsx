@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import {
-  CreditCard, Sparkles, Check, Clock, CheckCircle2,
+  CreditCard, ShieldCheck, Check, Clock, CheckCircle2,
   XCircle, Copy, Upload, AlertCircle, AlertTriangle,
-  Loader2, ShieldCheck, ArrowRight, ExternalLink
+  Loader2, ArrowRight, ExternalLink
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -171,7 +171,7 @@ export default function LanggananPage() {
                 isPro ? "bg-emerald-50 text-[#16A34A]" : "bg-slate-100 text-slate-600"
               }`}
             >
-              <Sparkles className="w-6 h-6" />
+              <CreditCard className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -340,7 +340,7 @@ export default function LanggananPage() {
 
               <div>
                 <span className="text-[11px] font-medium text-slate-500 block">Nomor Rekening</span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mt-0.5">
                   <span className="text-sm font-bold text-slate-900 font-mono">
                     {plan?.bank_account_number || "8735019283"}
                   </span>
@@ -351,10 +351,10 @@ export default function LanggananPage() {
                         "Nomor rekening"
                       )
                     }
-                    className="p-1 text-slate-500 hover:text-slate-800"
-                    title="Salin"
+                    className="p-1.5 min-h-[36px] min-w-[36px] rounded-lg hover:bg-slate-200/70 flex items-center justify-center text-slate-600 hover:text-slate-900 active:scale-95 transition-all"
+                    title="Salin Nomor Rekening"
                   >
-                    <Copy className="w-3.5 h-3.5" />
+                    <Copy className="w-4 h-4" />
                   </button>
                 </div>
                 <span className="text-[11px] text-slate-500 block">
@@ -366,7 +366,7 @@ export default function LanggananPage() {
                 <span className="text-[11px] font-medium text-slate-500 block">
                   Jumlah Transfer Tepat
                 </span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mt-0.5">
                   <span className="text-base font-extrabold text-[#16A34A]">
                     {formatRupiah(totalTransfer)}
                   </span>
@@ -374,10 +374,10 @@ export default function LanggananPage() {
                     onClick={() =>
                       copyToClipboard(String(totalTransfer), "Jumlah transfer")
                     }
-                    className="p-1 text-slate-500 hover:text-slate-800"
-                    title="Salin"
+                    className="p-1.5 min-h-[36px] min-w-[36px] rounded-lg hover:bg-slate-200/70 flex items-center justify-center text-slate-600 hover:text-slate-900 active:scale-95 transition-all"
+                    title="Salin Jumlah Transfer"
                   >
-                    <Copy className="w-3.5 h-3.5" />
+                    <Copy className="w-4 h-4" />
                   </button>
                 </div>
                 <span className="text-[10px] text-amber-700 font-medium block">

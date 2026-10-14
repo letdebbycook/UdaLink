@@ -239,67 +239,137 @@ export default function AdminPembayaranPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0] text-[#64748B]">
-                <tr>
-                  <th className="py-3 px-4 font-semibold">Tanggal</th>
-                  <th className="py-3 px-4 font-semibold">Pengguna</th>
-                  <th className="py-3 px-4 font-semibold">Pengirim</th>
-                  <th className="py-3 px-4 font-semibold">Nominal</th>
-                  <th className="py-3 px-4 font-semibold">Status</th>
-                  <th className="py-3 px-4 font-semibold text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#E2E8F0]">
-                {filteredPayments.map((p) => (
-                  <tr key={p.id} className="hover:bg-[#F8FAFC] transition-colors">
-                    <td className="py-3.5 px-4 text-[#64748B] whitespace-nowrap">
-                      {format(new Date(p.created_at), "dd MMM yyyy, HH:mm", { locale: localeId })}
-                    </td>
-                    <td className="py-3.5 px-4 font-medium text-[#0F172A]">
-                      <div>{p.user?.display_name || "Pengguna"}</div>
-                      <div className="text-[11px] text-[#94A3B8] font-mono">@{p.user?.username || "-"}</div>
-                    </td>
-                    <td className="py-3.5 px-4 text-[#0F172A]">
-                      <div className="font-medium">{p.sender_name}</div>
-                      <div className="text-[11px] text-[#64748B]">{p.sender_bank}</div>
-                    </td>
-                    <td className="py-3.5 px-4 font-bold text-[#0F172A]">
-                      {formatRupiah(p.amount)}
-                    </td>
-                    <td className="py-3.5 px-4">
+        <div className="space-y-3">
+          {/* Mobile Card View (md:hidden) */}
+          <div className="md:hidden space-y-3">
+            {filteredPayments.map((p) => (
+              <Card key={p.id} className="border-[#E2E8F0] shadow-xs bg-white">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-semibold text-sm text-[#0F172A]">
+                        {p.user?.display_name || "Pengguna"}
+                      </p>
+                      <p className="text-[11px] text-[#94A3B8] font-mono">
+                        @{p.user?.username || "-"}
+                      </p>
+                    </div>
+                    <div>
                       {p.status === "pending" && (
-                        <Badge className="bg-amber-100 text-amber-800">Menunggu</Badge>
+                        <Badge className="bg-amber-100 text-amber-800 text-[10px]">Menunggu</Badge>
                       )}
                       {p.status === "approved" && (
-                        <Badge className="bg-emerald-100 text-emerald-800">Disetujui</Badge>
+                        <Badge className="bg-emerald-100 text-emerald-800 text-[10px]">Disetujui</Badge>
                       )}
                       {p.status === "rejected" && (
-                        <div>
-                          <Badge className="bg-red-100 text-red-800">Ditolak</Badge>
-                          {p.admin_note && (
-                            <p className="text-[10px] text-red-600 mt-1">{p.admin_note}</p>
-                          )}
-                        </div>
+                        <Badge className="bg-red-100 text-red-800 text-[10px]">Ditolak</Badge>
                       )}
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openInspectModal(p)}
-                        className="h-8 gap-1.5 text-xs"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                        <span>Periksa</span>
-                      </Button>
-                    </td>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-100">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">Nominal Transfer</span>
+                      <span className="font-bold text-sm text-[#0F172A]">
+                        {formatRupiah(p.amount)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">Pengirim</span>
+                      <span className="font-medium text-[#0F172A] block truncate">
+                        {p.sender_name} ({p.sender_bank})
+                      </span>
+                    </div>
+                  </div>
+
+                  {p.status === "rejected" && p.admin_note && (
+                    <p className="text-[11px] text-red-600 bg-red-50 p-2 rounded-lg">
+                      Alasan: {p.admin_note}
+                    </p>
+                  )}
+
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                    <span className="text-[11px] text-slate-400">
+                      {format(new Date(p.created_at), "dd MMM yyyy, HH:mm", { locale: localeId })}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openInspectModal(p)}
+                      className="h-8 gap-1.5 text-xs min-h-[36px]"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      <span>Periksa</span>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Desktop Table View (hidden md:block) */}
+          <div className="hidden md:block bg-white rounded-xl border border-[#E2E8F0] overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0] text-[#64748B]">
+                  <tr>
+                    <th className="py-3 px-4 font-semibold">Tanggal</th>
+                    <th className="py-3 px-4 font-semibold">Pengguna</th>
+                    <th className="py-3 px-4 font-semibold">Pengirim</th>
+                    <th className="py-3 px-4 font-semibold">Nominal</th>
+                    <th className="py-3 px-4 font-semibold">Status</th>
+                    <th className="py-3 px-4 font-semibold text-right">Aksi</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-[#E2E8F0]">
+                  {filteredPayments.map((p) => (
+                    <tr key={p.id} className="hover:bg-[#F8FAFC] transition-colors">
+                      <td className="py-3.5 px-4 text-[#64748B] whitespace-nowrap">
+                        {format(new Date(p.created_at), "dd MMM yyyy, HH:mm", { locale: localeId })}
+                      </td>
+                      <td className="py-3.5 px-4 font-medium text-[#0F172A]">
+                        <div>{p.user?.display_name || "Pengguna"}</div>
+                        <div className="text-[11px] text-[#94A3B8] font-mono">@{p.user?.username || "-"}</div>
+                      </td>
+                      <td className="py-3.5 px-4 text-[#0F172A]">
+                        <div className="font-medium">{p.sender_name}</div>
+                        <div className="text-[11px] text-[#64748B]">{p.sender_bank}</div>
+                      </td>
+                      <td className="py-3.5 px-4 font-bold text-[#0F172A]">
+                        {formatRupiah(p.amount)}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        {p.status === "pending" && (
+                          <Badge className="bg-amber-100 text-amber-800">Menunggu</Badge>
+                        )}
+                        {p.status === "approved" && (
+                          <Badge className="bg-emerald-100 text-emerald-800">Disetujui</Badge>
+                        )}
+                        {p.status === "rejected" && (
+                          <div>
+                            <Badge className="bg-red-100 text-red-800">Ditolak</Badge>
+                            {p.admin_note && (
+                              <p className="text-[10px] text-red-600 mt-1">{p.admin_note}</p>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openInspectModal(p)}
+                          className="h-8 gap-1.5 text-xs"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          <span>Periksa</span>
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
