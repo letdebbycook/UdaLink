@@ -1,28 +1,33 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, ShoppingBag, ExternalLink, Check, Sparkles } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Search, ShoppingBag, ExternalLink, Check } from "lucide-react";
 
 export function PhoneMockup() {
   const [activeTab, setActiveTab] = useState("Semua");
   const [searchVal, setSearchVal] = useState("");
 
   const sampleProducts = [
-    { number: 1, name: "Kemeja Linen Oversized", price: "Rp 139.000", tag: "Shopee", isFeatured: true },
-    { number: 3, name: "Keyboard Wireless 75%", price: "Rp 499.000", tag: "Shopee", isFeatured: true },
-    { number: 6, name: "Serum Niacinamide 10%", price: "Rp 89.000", tag: "Shopee", isFeatured: false },
-    { number: 11, name: "Stand Laptop Aluminium", price: "Rp 82.000", tag: "Tokopedia", isFeatured: false },
+    { number: 1, name: "Kemeja Linen Oversized", price: "Rp 139.000", category: "Fashion" },
+    { number: 3, name: "Keyboard Wireless 75%", price: "Rp 499.000", category: "Gadget" },
+    { number: 6, name: "Serum Niacinamide 10%", price: "Rp 89.000", category: "Perawatan" },
+    { number: 11, name: "Stand Laptop Aluminium", price: "Rp 82.000", category: "Gadget" },
+    { number: 5, name: "Celana Cargo Wide Leg", price: "Rp 179.000", category: "Fashion" },
+    { number: 8, name: "Sunscreen SPF 50+", price: "Rp 65.000", category: "Perawatan" },
   ];
 
   const filtered = sampleProducts.filter((p) => {
-    if (searchVal) {
-      if (/^\d+$/.test(searchVal.trim())) {
-        return p.number.toString() === searchVal.trim();
-      }
-      return p.name.toLowerCase().includes(searchVal.toLowerCase());
+    const matchCategory = activeTab === "Semua" || p.category === activeTab;
+
+    if (searchVal.trim()) {
+      const isNumeric = /^\d+$/.test(searchVal.trim());
+      const matchSearch = isNumeric
+        ? p.number.toString() === searchVal.trim()
+        : p.name.toLowerCase().includes(searchVal.toLowerCase());
+      return matchCategory && matchSearch;
     }
-    return true;
+
+    return matchCategory;
   });
 
   return (
@@ -49,7 +54,7 @@ export function PhoneMockup() {
             Nando Pratama
           </h4>
           <p className="text-[10px] text-[#64748B] line-clamp-1 max-w-[220px]">
-            Sharing racun shopee & outfit harian terfavorit ✨
+            Sharing racun shopee &amp; outfit harian terfavorit...
           </p>
         </div>
 
@@ -63,19 +68,19 @@ export function PhoneMockup() {
           </p>
         </div>
 
-        {/* Sticky Search bar mini */}
+        {/* Search bar */}
         <div className="relative mb-2">
-          <Search className="absolute left-2.5 top-1/2 -translate-x-1/2 h-3.5 w-3.5 text-[#94A3B8]" />
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#94A3B8]" />
           <input
             type="text"
             placeholder="Ketik '3' untuk tes nomor..."
             value={searchVal}
             onChange={(e) => setSearchVal(e.target.value)}
-            className="w-full h-8 pl-8 pr-2 rounded-lg bg-white border border-[#DCFCE7] text-[11px] placeholder:text-[#94A3B8] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+            className="w-full h-8 pl-7 pr-2 rounded-lg bg-white border border-[#DCFCE7] text-[11px] placeholder:text-[#94A3B8] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
           />
         </div>
 
-        {/* Chip Category mini */}
+        {/* Category Tabs */}
         <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 mb-2">
           {["Semua", "Fashion", "Gadget", "Perawatan"].map((cat) => (
             <button
@@ -84,7 +89,7 @@ export function PhoneMockup() {
               className={`text-[9px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap transition-colors ${
                 activeTab === cat
                   ? "bg-[#16A34A] text-white"
-                  : "bg-white text-[#64748B] border border-[#E2E8F0]"
+                  : "bg-white text-[#64748B] border border-[#E2E8F0] hover:border-[#16A34A]/40"
               }`}
             >
               {cat}
@@ -92,7 +97,7 @@ export function PhoneMockup() {
           ))}
         </div>
 
-        {/* Product Grid Mini (2 col) */}
+        {/* Product Grid */}
         <div className="grid grid-cols-2 gap-2 flex-1 overflow-y-auto max-h-[250px] pr-0.5">
           {filtered.length === 0 ? (
             <div className="col-span-2 text-center py-6 text-[10px] text-[#64748B]">
@@ -129,7 +134,7 @@ export function PhoneMockup() {
           )}
         </div>
 
-        {/* Footer mini */}
+        {/* Footer */}
         <div className="text-center mt-2 pt-2 border-t border-[#DCFCE7]/60 text-[9px] text-[#64748B]">
           Dibuat dengan <span className="font-bold text-[#16A34A]">UdaLink</span>
         </div>
@@ -137,3 +142,4 @@ export function PhoneMockup() {
     </div>
   );
 }
+
