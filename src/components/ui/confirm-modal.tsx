@@ -61,75 +61,88 @@ export function ConfirmModal({
   if (!isOpen || !mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
-      {/* Backdrop */}
+    <div
+      className="relative z-[100]"
+      aria-labelledby="confirm-modal-title"
+      role="dialog"
+      aria-modal="true"
+    >
+      {/* Backdrop: full screen fixed sibling */}
       <div
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-200"
         onClick={() => {
           if (!loading) onClose();
         }}
       />
 
-      {/* Modal Dialog Card */}
-      <div className="relative w-full max-w-md my-auto transform overflow-hidden rounded-2xl bg-white p-6 text-left shadow-2xl transition-all border border-slate-100 z-10 animate-in zoom-in-95 duration-200">
-        <div className="flex items-start gap-4">
-          <div
-            className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
-              variant === "danger"
-                ? "bg-red-50 text-red-600 border border-red-100"
-                : "bg-amber-50 text-amber-600 border border-amber-100"
-            }`}
-          >
-            {icon === "logout" ? (
-              <LogOut className="w-5 h-5" />
-            ) : icon === "trash" ? (
-              <Trash2 className="w-5 h-5" />
-            ) : (
-              <AlertTriangle className="w-5 h-5" />
-            )}
+      {/* Scrollable container with min-h-full centering (standar Tailwind UI / Radix) */}
+      <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-6">
+          {/* Modal Dialog Card */}
+          <div className="relative transform overflow-hidden rounded-2xl bg-white p-5 sm:p-6 text-left shadow-2xl transition-all border border-slate-100 w-full max-w-md my-auto animate-in zoom-in-95 duration-200">
+            <div className="flex items-start gap-4">
+              <div
+                className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
+                  variant === "danger"
+                    ? "bg-red-50 text-red-600 border border-red-100"
+                    : "bg-amber-50 text-amber-600 border border-amber-100"
+                }`}
+              >
+                {icon === "logout" ? (
+                  <LogOut className="w-5 h-5" />
+                ) : icon === "trash" ? (
+                  <Trash2 className="w-5 h-5" />
+                ) : (
+                  <AlertTriangle className="w-5 h-5" />
+                )}
+              </div>
+
+              <div className="flex-1 min-w-0 pt-0.5">
+                <h3
+                  id="confirm-modal-title"
+                  className="text-base font-bold text-[#0F172A] leading-snug"
+                >
+                  {title}
+                </h3>
+                <p className="mt-1.5 text-xs sm:text-sm text-slate-500 leading-relaxed">
+                  {description}
+                </p>
+              </div>
+
+              <button
+                onClick={onClose}
+                disabled={loading}
+                aria-label="Tutup"
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg transition-colors -mr-1 -mt-1 cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={loading}
+                className="w-full sm:w-auto text-xs sm:text-sm font-medium border-slate-200 text-slate-700 hover:bg-slate-50 min-h-[44px] h-11 px-4 rounded-xl cursor-pointer"
+              >
+                {cancelText}
+              </Button>
+              <Button
+                type="button"
+                onClick={onConfirm}
+                disabled={loading}
+                className={`w-full sm:w-auto text-xs sm:text-sm font-semibold min-h-[44px] h-11 px-4 rounded-xl shadow-xs cursor-pointer ${
+                  variant === "danger"
+                    ? "bg-red-600 hover:bg-red-700 text-white"
+                    : "bg-[#16A34A] hover:bg-emerald-700 text-white"
+                }`}
+              >
+                {loading ? "Memproses..." : confirmText}
+              </Button>
+            </div>
           </div>
-
-          <div className="flex-1 min-w-0 pt-0.5">
-            <h3 className="text-base font-bold text-[#0F172A] leading-snug">
-              {title}
-            </h3>
-            <p className="mt-1.5 text-xs sm:text-sm text-slate-500 leading-relaxed">
-              {description}
-            </p>
-          </div>
-
-          <button
-            onClick={onClose}
-            disabled={loading}
-            aria-label="Tutup"
-            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors -mr-1 -mt-1 cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            disabled={loading}
-            className="w-full sm:w-auto text-xs sm:text-sm font-medium border-slate-200 text-slate-700 hover:bg-slate-50 h-10 px-4 rounded-xl cursor-pointer"
-          >
-            {cancelText}
-          </Button>
-          <Button
-            type="button"
-            onClick={onConfirm}
-            disabled={loading}
-            className={`w-full sm:w-auto text-xs sm:text-sm font-semibold h-10 px-4 rounded-xl shadow-xs cursor-pointer ${
-              variant === "danger"
-                ? "bg-red-600 hover:bg-red-700 text-white"
-                : "bg-[#16A34A] hover:bg-emerald-700 text-white"
-            }`}
-          >
-            {loading ? "Memproses..." : confirmText}
-          </Button>
         </div>
       </div>
     </div>,
