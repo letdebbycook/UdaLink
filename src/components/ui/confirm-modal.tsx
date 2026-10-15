@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { AlertTriangle, LogOut, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -29,7 +30,24 @@ export function ConfirmModal({
   loading = false,
   icon = "warning",
 }: ConfirmModalProps) {
-  // Close on Escape key
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Kunci scroll body saat modal aktif agar halaman di belakang tidak ikut tergeser
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
+  // Tutup dengan tombol Escape
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape" && isOpen && !loading) {
@@ -40,20 +58,20 @@ export function ConfirmModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, loading, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
         onClick={() => {
           if (!loading) onClose();
         }}
       />
 
       {/* Modal Dialog Card */}
-      <div className="relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left shadow-2xl transition-all border border-slate-100 z-10 animate-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-md my-auto transform overflow-hidden rounded-2xl bg-white p-6 text-left shadow-2xl transition-all border border-slate-100 z-10 animate-in zoom-in-95 duration-200">
         <div className="flex items-start gap-4">
           <div
             className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
@@ -83,7 +101,8 @@ export function ConfirmModal({
           <button
             onClick={onClose}
             disabled={loading}
-            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors -mr-1 -mt-1"
+            aria-label="Tutup"
+            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors -mr-1 -mt-1 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -95,7 +114,7 @@ export function ConfirmModal({
             variant="outline"
             onClick={onClose}
             disabled={loading}
-            className="w-full sm:w-auto text-xs sm:text-sm font-medium border-slate-200 text-slate-700 hover:bg-slate-50 h-10 px-4 rounded-xl"
+            className="w-full sm:w-auto text-xs sm:text-sm font-medium border-slate-200 text-slate-700 hover:bg-slate-50 h-10 px-4 rounded-xl cursor-pointer"
           >
             {cancelText}
           </Button>
@@ -103,7 +122,7 @@ export function ConfirmModal({
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className={`w-full sm:w-auto text-xs sm:text-sm font-semibold h-10 px-4 rounded-xl shadow-xs ${
+            className={`w-full sm:w-auto text-xs sm:text-sm font-semibold h-10 px-4 rounded-xl shadow-xs cursor-pointer ${
               variant === "danger"
                 ? "bg-red-600 hover:bg-red-700 text-white"
                 : "bg-[#16A34A] hover:bg-emerald-700 text-white"
@@ -113,6 +132,7 @@ export function ConfirmModal({
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
