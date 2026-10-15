@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle, LogOut, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -31,23 +31,23 @@ export function ConfirmModal({
   icon = "warning",
 }: ConfirmModalProps) {
   const [mounted, setMounted] = useState(false);
+  const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Kunci scroll body saat modal aktif agar halaman di belakang tidak ikut tergeser
   useEffect(() => {
     if (isOpen) {
       const originalOverflow = document.body.style.overflow;
       document.body.style.overflow = "hidden";
+      cancelButtonRef.current?.focus();
       return () => {
         document.body.style.overflow = originalOverflow;
       };
     }
   }, [isOpen]);
 
-  // Tutup dengan tombol Escape
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape" && isOpen && !loading) {
@@ -67,19 +67,16 @@ export function ConfirmModal({
       role="dialog"
       aria-modal="true"
     >
-      {/* Backdrop: full screen fixed sibling */}
       <div
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-200"
+        className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs motion-safe:transition-opacity motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200"
         onClick={() => {
           if (!loading) onClose();
         }}
       />
 
-      {/* Scrollable container with min-h-full centering (standar Tailwind UI / Radix) */}
       <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
         <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-6">
-          {/* Modal Dialog Card */}
-          <div className="relative transform overflow-hidden rounded-2xl bg-white p-5 sm:p-6 text-left shadow-2xl transition-all border border-slate-100 w-full max-w-md my-auto animate-in zoom-in-95 duration-200">
+          <div className="relative transform overflow-hidden rounded-2xl bg-white p-5 sm:p-6 text-left shadow-2xl border border-slate-100 w-full max-w-md my-auto motion-safe:transition-all motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-200">
             <div className="flex items-start gap-4">
               <div
                 className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
@@ -112,8 +109,8 @@ export function ConfirmModal({
               <button
                 onClick={onClose}
                 disabled={loading}
-                aria-label="Tutup"
-                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg transition-colors -mr-1 -mt-1 cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center"
+                aria-label="Tutup dialog konfirmasi"
+                className="text-slate-400 hover:text-slate-600 rounded-lg transition-colors -mr-2 -mt-2 cursor-pointer h-11 w-11 flex items-center justify-center"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -121,6 +118,7 @@ export function ConfirmModal({
 
             <div className="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5">
               <Button
+                ref={cancelButtonRef}
                 type="button"
                 variant="outline"
                 onClick={onClose}
@@ -136,7 +134,7 @@ export function ConfirmModal({
                 className={`w-full sm:w-auto text-xs sm:text-sm font-semibold min-h-[44px] h-11 px-4 rounded-xl shadow-xs cursor-pointer ${
                   variant === "danger"
                     ? "bg-red-600 hover:bg-red-700 text-white"
-                    : "bg-[#16A34A] hover:bg-emerald-700 text-white"
+                    : "bg-[#15803D] hover:bg-[#166534] text-white"
                 }`}
               >
                 {loading ? "Memproses..." : confirmText}
