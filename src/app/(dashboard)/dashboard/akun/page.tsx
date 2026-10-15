@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import Link from "next/link";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 
 export default function AkunPage() {
   const [user, setUser] = useState<SupabaseUser | null>(null);
@@ -19,6 +20,7 @@ export default function AkunPage() {
   const [loadingPassword, setLoadingPassword] = useState(false);
   const [loadingEmail, setLoadingEmail] = useState(false);
   const [loadingLogout, setLoadingLogout] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
@@ -72,17 +74,27 @@ export default function AkunPage() {
 
   const handleUpdateEmail = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
       toast.error("Email tidak boleh kosong.");
       return;
     }
-    if (email === user?.email) {
+    if (trimmedEmail.length > 100) {
+      toast.error("Panjang alamat email maksimal 100 karakter.");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      toast.error("Format email tidak valid. Masukkan alamat email yang benar (contoh: nama@domain.com).");
+      return;
+    }
+    if (trimmedEmail.toLowerCase() === user?.email?.toLowerCase()) {
       toast.error("Email baru sama dengan email saat ini.");
       return;
     }
     setLoadingEmail(true);
     try {
-      const { error } = await supabase.auth.updateUser({ email });
+      const { error } = await supabase.auth.updateUser({ email: trimmedEmail });
       if (error) throw error;
       toast.success("Email konfirmasi telah dikirim ke email baru. Silakan periksa inbox-mu.");
     } catch (err: unknown) {
@@ -211,10 +223,17 @@ export default function AkunPage() {
             <Input
               type="email"
               required
+              maxLength={50}
               placeholder="email-baru@contoh.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => setEmail(e.target.value.replace(/\s+/g, ""))}
             />
+            <div className="flex justify-between items-center text-[11px] text-slate-400 mt-1">
+              <span>Format: nama@domain.com (maks. 50 karakter, tanpa spasi)</span>
+              <span className={email.length >= 50 ? "text-amber-600 font-semibold" : ""}>
+                {email.length}/50
+              </span>
+            </div>
           </div>
 
           <Button
@@ -311,19 +330,7 @@ export default function AkunPage() {
 
         <Button
           type="button"
-          onClick={async () => {
-            if (!window.confirm("Apakah kamu yakin ingin keluar dari akun UdaLink?")) return;
-            setLoadingLogout(true);
-            try {
-              await supabase.auth.signOut();
-              toast.success("Berhasil keluar dari akun.");
-              window.location.href = "/masuk";
-            } catch (err: unknown) {
-              const msg = err instanceof Error ? err.message : "Terjadi kesalahan";
-              toast.error(`Gagal keluar: ${msg}`);
-              setLoadingLogout(false);
-            }
-          }}
+          onClick={() => setShowLogoutModal(true)}
           disabled={loadingLogout}
           variant="outline"
           className="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 text-sm font-semibold gap-2"
@@ -345,6 +352,32 @@ export default function AkunPage() {
           Lupa kata sandi saat ini? Gunakan fitur atur ulang via email
         </Link>
       </div>
+
+      {/* Modern Custom Logout Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={async () => {
+          setLoadingLogout(true);
+          try {
+            await supabase.auth.signOut();
+            toast.success("Berhasil keluar dari akun.");
+            window.location.href = "/masuk";
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : "Terjadi kesalahan";
+            toast.error(`Gagal keluar: ${msg}`);
+            setLoadingLogout(false);
+            setShowLogoutModal(false);
+          }
+        }}
+        title="Keluar dari Akun UdaLink"
+        description="Apakah kamu yakin ingin keluar dari akun UdaLink? Kamu perlu masuk kembali untuk mengakses akunmu."
+        confirmText="Ya, Keluar"
+        cancelText="Batal"
+        loading={loadingLogout}
+        icon="logout"
+        variant="danger"
+      />
     </div>
   );
 }

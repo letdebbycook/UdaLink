@@ -277,7 +277,7 @@ export default function StatistikPage() {
                     </div>
 
                     {/* Progress Bar */}
-                    <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden ml-7 sm:ml-8">
+                    <div className="h-2 rounded-full bg-slate-100 overflow-hidden ml-7 sm:ml-8">
                       <div
                         className="h-full rounded-full bg-[#16A34A] transition-all duration-500"
                         style={{ width: `${percentage}%` }}

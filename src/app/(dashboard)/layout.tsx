@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 
 export default function DashboardLayout({
   children,
@@ -32,6 +33,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const [currentUser, setCurrentUser] = useState<{
     displayName: string;
@@ -79,8 +81,11 @@ export default function DashboardLayout({
     loadUser();
   }, []);
 
-  async function handleLogout() {
-    if (!window.confirm("Apakah kamu yakin ingin keluar dari akun?")) return;
+  function handleLogout() {
+    setShowLogoutModal(true);
+  }
+
+  async function performLogout() {
     try {
       setIsLoggingOut(true);
       await supabase.auth.signOut();
@@ -89,6 +94,7 @@ export default function DashboardLayout({
     } catch (err) {
       toast.error("Gagal keluar dari akun.");
       setIsLoggingOut(false);
+      setShowLogoutModal(false);
     }
   }
 
@@ -387,6 +393,20 @@ export default function DashboardLayout({
           </div>
         </div>
       )}
+
+      {/* Modern Custom Logout Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={performLogout}
+        title="Keluar dari UdaLink"
+        description="Apakah kamu yakin ingin keluar dari akun? Kamu perlu masuk kembali untuk mengakses dasbor etalasemu."
+        confirmText="Ya, Keluar"
+        cancelText="Batal"
+        loading={isLoggingOut}
+        icon="logout"
+        variant="danger"
+      />
     </div>
   );
 }

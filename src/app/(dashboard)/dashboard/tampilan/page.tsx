@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { THEMES, getTheme, ThemeDefinition } from "@/lib/themes";
@@ -61,13 +62,27 @@ export default function TampilanPage() {
   const [youtube, setYoutube] = useState("");
 
   // Banner State
+  const [bannerSource, setBannerSource] = useState<"local" | "url">("local");
   const [newBannerTitle, setNewBannerTitle] = useState("");
   const [newBannerLink, setNewBannerLink] = useState("");
   const [newBannerFile, setNewBannerFile] = useState<File | null>(null);
   const [newBannerPreview, setNewBannerPreview] = useState<string | null>(null);
+  const [newBannerUrl, setNewBannerUrl] = useState("");
   const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [bannerToDelete, setBannerToDelete] = useState<Banner | null>(null);
+  const [isDeletingBanner, setIsDeletingBanner] = useState(false);
+  const [previewBannerIndex, setPreviewBannerIndex] = useState(0);
 
   const isPro = plan?.is_pro ?? false;
+
+  // Auto carousel cycling for live simulator preview
+  useEffect(() => {
+    if (banners.length <= 1) return;
+    const interval = setInterval(() => {
+      setPreviewBannerIndex((prev) => (prev + 1) % banners.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [banners.length]);
 
   const loadData = useCallback(async () => {
     try {
@@ -173,9 +188,23 @@ export default function TampilanPage() {
         }
       }
 
-      // Sanitasi Instagram dan TikTok (tanpa awalan '@')
-      const sanitizedIg = instagram.replace(/^@+/, "").trim() || null;
-      const sanitizedTt = tiktok.replace(/^@+/, "").trim() || null;
+      // Sanitasi Instagram (ekstrak handle atau simpan bersih)
+      let sanitizedIg: string | null = null;
+      if (instagram.trim()) {
+        const trimmed = instagram.trim().replace(/^@+/, "");
+        const igMatch = trimmed.match(/(?:instagram\.com\/)(?:#!\/)?([a-zA-Z0-9._]+)/i);
+        sanitizedIg = igMatch && igMatch[1] ? igMatch[1] : trimmed.replace(/\/+$/, "");
+      }
+
+      // Sanitasi TikTok
+      let sanitizedTt: string | null = null;
+      if (tiktok.trim()) {
+        const trimmed = tiktok.trim().replace(/^@+/, "");
+        const ttMatch = trimmed.match(/(?:tiktok\.com\/@?)([a-zA-Z0-9._]+)/i);
+        sanitizedTt = ttMatch && ttMatch[1] ? ttMatch[1] : trimmed.replace(/\/+$/, "");
+      }
+
+      // Sanitasi YouTube
       const sanitizedYt = youtube.trim() || null;
 
       const { error } = await supabase
@@ -224,29 +253,53 @@ export default function TampilanPage() {
       return;
     }
 
+    if (bannerSource === "local" && !newBannerFile) {
+      toast.error("Silakan pilih file gambar banner terlebih dahulu");
+      return;
+    }
+
+    if (bannerSource === "url") {
+      if (!newBannerUrl.trim()) {
+        toast.error("Silakan masukkan tautan URL gambar banner");
+        return;
+      }
+      if (!/^https?:\/\//i.test(newBannerUrl.trim())) {
+        toast.error("Format tautan gambar harus diawali dengan https:// atau http://");
+        return;
+      }
+    }
+
     try {
       setUploadingBanner(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Pengguna tidak terautentikasi");
 
-      const fileName = `${Date.now()}-banner.webp`;
-      const filePath = `${user.id}/${fileName}`;
+      let finalBannerImageUrl = "";
 
-      const { error: uploadErr } = await supabase.storage
-        .from("banners")
-        .upload(filePath, newBannerFile, { upsert: true });
+      if (bannerSource === "local" && newBannerFile) {
+        const fileName = `${Date.now()}-banner.webp`;
+        const filePath = `${user.id}/${fileName}`;
 
-      if (uploadErr) throw uploadErr;
+        const { error: uploadErr } = await supabase.storage
+          .from("banners")
+          .upload(filePath, newBannerFile, { upsert: true });
 
-      const { data: publicData } = supabase.storage
-        .from("banners")
-        .getPublicUrl(filePath);
+        if (uploadErr) throw uploadErr;
+
+        const { data: publicData } = supabase.storage
+          .from("banners")
+          .getPublicUrl(filePath);
+
+        finalBannerImageUrl = publicData.publicUrl;
+      } else {
+        finalBannerImageUrl = newBannerUrl.trim();
+      }
 
       const { error: insertErr } = await supabase
         .from("banners")
         .insert({
           user_id: user.id,
-          image_url: publicData.publicUrl,
+          image_url: finalBannerImageUrl,
           title: newBannerTitle.trim() || null,
           link_url: newBannerLink.trim() || null,
           sort_order: banners.length + 1,
@@ -260,6 +313,7 @@ export default function TampilanPage() {
       setNewBannerLink("");
       setNewBannerFile(null);
       setNewBannerPreview(null);
+      setNewBannerUrl("");
       loadData();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Gagal menambahkan banner");
@@ -268,15 +322,23 @@ export default function TampilanPage() {
     }
   }
 
-  async function handleDeleteBanner(id: string) {
-    if (!window.confirm("Hapus banner ini?")) return;
+  function handleDeleteBanner(b: Banner) {
+    setBannerToDelete(b);
+  }
+
+  async function confirmDeleteBanner() {
+    if (!bannerToDelete) return;
     try {
-      const { error } = await supabase.from("banners").delete().eq("id", id);
+      setIsDeletingBanner(true);
+      const { error } = await supabase.from("banners").delete().eq("id", bannerToDelete.id);
       if (error) throw error;
       toast.success("Banner berhasil dihapus");
+      setBannerToDelete(null);
       loadData();
     } catch (err: unknown) {
-      toast.error("Gagal menghapus banner");
+      toast.error(err instanceof Error ? err.message : "Gagal menghapus banner");
+    } finally {
+      setIsDeletingBanner(false);
     }
   }
 
@@ -512,7 +574,7 @@ export default function TampilanPage() {
                           <span className="text-xs font-semibold text-slate-800 truncate">
                             {th.name}
                           </span>
-                          {th.isPremium && (
+                          {th.isPremium && !isPro && (
                             <Lock className="w-3 h-3 text-amber-500 shrink-0" />
                           )}
                         </div>
@@ -536,54 +598,79 @@ export default function TampilanPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                    <MessageCircle className="w-4 h-4 text-emerald-600" />
-                    Nomor WhatsApp (dengan format 628...)
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                      <MessageCircle className="w-4 h-4 text-emerald-600" />
+                      Nomor / Link WhatsApp
+                    </label>
+                    <span className="text-[11px] text-slate-400">{whatsapp.length}/50</span>
+                  </div>
                   <Input
-                    placeholder="Contoh: 628123456789"
+                    maxLength={50}
+                    placeholder="Contoh: 08123456789 atau https://wa.me/628123456789"
                     value={whatsapp}
                     onChange={(e) => setWhatsapp(e.target.value)}
                   />
                   <p className="text-[11px] text-slate-400 mt-1">
-                    Akan memunculkan tombol mengambang WhatsApp di etalase jika diisi.
+                    Bisa masukkan nomor telepon (08... / 628...) atau tautan link WhatsApp.
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                    <InstagramIcon className="w-4 h-4 text-pink-600" />
-                    Username Instagram
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                      <InstagramIcon className="w-4 h-4 text-pink-600" />
+                      Instagram (Tautan Profil atau Username)
+                    </label>
+                    <span className="text-[11px] text-slate-400">{instagram.length}/100</span>
+                  </div>
                   <Input
-                    placeholder="Contoh: nandokreator (tanpa @)"
+                    maxLength={100}
+                    placeholder="Contoh: https://instagram.com/nandokreator atau @nandokreator"
                     value={instagram}
-                    onChange={(e) => setInstagram(e.target.value)}
+                    onChange={(e) => setInstagram(e.target.value.replace(/\s+/g, ""))}
                   />
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Mendukung tautan link sosial media atau username akunmu (maks. 100 karakter).
+                  </p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                    <Video className="w-4 h-4 text-slate-900" />
-                    Username TikTok
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                      <Video className="w-4 h-4 text-slate-900" />
+                      TikTok (Tautan Profil atau Username)
+                    </label>
+                    <span className="text-[11px] text-slate-400">{tiktok.length}/100</span>
+                  </div>
                   <Input
-                    placeholder="Contoh: nandotips (tanpa @)"
+                    maxLength={100}
+                    placeholder="Contoh: https://tiktok.com/@nandotips atau nandotips"
                     value={tiktok}
-                    onChange={(e) => setTiktok(e.target.value)}
+                    onChange={(e) => setTiktok(e.target.value.replace(/\s+/g, ""))}
                   />
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Mendukung tautan link profil TikTok atau username (maks. 100 karakter).
+                  </p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                    <YoutubeIcon className="w-4 h-4 text-red-600" />
-                    Channel YouTube
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                      <YoutubeIcon className="w-4 h-4 text-red-600" />
+                      YouTube (Tautan Channel atau Handle)
+                    </label>
+                    <span className="text-[11px] text-slate-400">{youtube.length}/120</span>
+                  </div>
                   <Input
-                    placeholder="Contoh: @NandoChannel"
+                    maxLength={120}
+                    placeholder="Contoh: https://youtube.com/@NandoChannel atau @NandoChannel"
                     value={youtube}
-                    onChange={(e) => setYoutube(e.target.value)}
+                    onChange={(e) => setYoutube(e.target.value.replace(/\s+/g, ""))}
                   />
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Mendukung link channel YouTube atau handle @ (maks. 120 karakter).
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -626,36 +713,104 @@ export default function TampilanPage() {
                     {/* Form Upload Banner Baru */}
                     {banners.length < 3 && (
                       <form onSubmit={handleAddBanner} className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
-                        <div className="text-xs font-semibold text-slate-800">Tambah Banner Baru</div>
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="file"
-                            id="banner-file"
-                            accept="image/*"
-                            onChange={async (e) => {
-                              const f = e.target.files?.[0];
-                              if (!f) return;
-                              const { file: comp, dataUrl } = await compressImage(f, 1200, 600, 0.85);
-                              setNewBannerFile(comp);
-                              setNewBannerPreview(dataUrl);
-                            }}
-                            className="hidden"
-                          />
-                          <label
-                            htmlFor="banner-file"
-                            className="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold cursor-pointer bg-white"
-                          >
-                            Pilih Gambar Banner (16:9)
-                          </label>
-                          {newBannerPreview && (
-                            <span className="text-xs text-emerald-600 font-medium">Gambar siap diupload</span>
-                          )}
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs font-semibold text-slate-800">
+                            Tambah Banner Baru ({banners.length}/3)
+                          </div>
+                          {/* Toggle Opsi: Dari Perangkat vs Dari Internet */}
+                          <div className="flex items-center bg-slate-200/80 p-0.5 rounded-lg text-[11px] font-medium">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setBannerSource("local");
+                                setNewBannerUrl("");
+                              }}
+                              className={`px-2.5 py-1 rounded-md transition-all ${
+                                bannerSource === "local"
+                                  ? "bg-white text-slate-900 shadow-xs font-semibold"
+                                  : "text-slate-600 hover:text-slate-900"
+                              }`}
+                            >
+                              Upload File
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setBannerSource("url");
+                                setNewBannerFile(null);
+                                setNewBannerPreview(null);
+                              }}
+                              className={`px-2.5 py-1 rounded-md transition-all ${
+                                bannerSource === "url"
+                                  ? "bg-white text-slate-900 shadow-xs font-semibold"
+                                  : "text-slate-600 hover:text-slate-900"
+                              }`}
+                            >
+                              Link Internet
+                            </button>
+                          </div>
                         </div>
+
+                        {bannerSource === "local" ? (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="file"
+                                id="banner-file"
+                                accept="image/*"
+                                onChange={async (e) => {
+                                  const f = e.target.files?.[0];
+                                  if (!f) return;
+                                  const { file: comp, dataUrl } = await compressImage(f, 1200, 600, 0.85);
+                                  setNewBannerFile(comp);
+                                  setNewBannerPreview(dataUrl);
+                                }}
+                                className="hidden"
+                              />
+                              <label
+                                htmlFor="banner-file"
+                                className="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold cursor-pointer bg-white hover:bg-slate-50 transition-colors inline-flex items-center gap-1.5 text-slate-700"
+                              >
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>Pilih Gambar dari Perangkat (16:9 / 21:9)</span>
+                              </label>
+                              {newBannerPreview && (
+                                <span className="text-xs text-emerald-600 font-medium">✓ Gambar siap diupload</span>
+                              )}
+                            </div>
+                            {newBannerPreview && (
+                              <div className="w-full max-w-xs h-24 rounded-lg overflow-hidden border border-slate-200 relative bg-slate-100">
+                                <img src={newBannerPreview} alt="Preview Banner" className="w-full h-full object-cover" />
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <Input
+                              placeholder="Masukkan URL gambar (contoh: https://images.unsplash.com/...)"
+                              value={newBannerUrl}
+                              onChange={(e) => setNewBannerUrl(e.target.value)}
+                            />
+                            {newBannerUrl && (
+                              <div className="w-full max-w-xs h-24 rounded-lg overflow-hidden border border-slate-200 relative bg-slate-100">
+                                <img
+                                  src={newBannerUrl}
+                                  alt="Preview Internet"
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = "";
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )}
 
                         <Input
                           placeholder="Judul banner (opsional)"
                           value={newBannerTitle}
                           onChange={(e) => setNewBannerTitle(e.target.value)}
+                          maxLength={60}
                         />
                         <Input
                           placeholder="Tautan klik banner (opsional, misal https://...)"
@@ -666,8 +821,8 @@ export default function TampilanPage() {
                         <Button
                           type="submit"
                           size="sm"
-                          disabled={uploadingBanner || !newBannerFile}
-                          className="bg-[#16A34A] text-white text-xs"
+                          disabled={uploadingBanner || (bannerSource === "local" ? !newBannerFile : !newBannerUrl.trim())}
+                          className="bg-[#16A34A] hover:bg-[#15803D] text-white text-xs gap-1.5"
                         >
                           {uploadingBanner ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Tambahkan Banner"}
                         </Button>
@@ -700,8 +855,9 @@ export default function TampilanPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDeleteBanner(b.id)}
-                            className="text-red-500 h-8 w-8 p-0"
+                            onClick={() => handleDeleteBanner(b)}
+                            title="Hapus Banner"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
                           >
                             ✕
                           </Button>
@@ -770,8 +926,34 @@ export default function TampilanPage() {
               {/* Banner Carousel Preview */}
               {banners.length > 0 && isPro && (
                 <div className="px-4 mt-4">
-                  <div className="rounded-xl overflow-hidden aspect-video border" style={{ borderColor: currentTheme.cardBorder }}>
-                    <img src={banners[0].image_url} alt="Banner" className="w-full h-full object-cover" />
+                  <div className="rounded-xl overflow-hidden aspect-video border relative group" style={{ borderColor: currentTheme.cardBorder }}>
+                    <img
+                      key={banners[previewBannerIndex % banners.length]?.id}
+                      src={banners[previewBannerIndex % banners.length]?.image_url}
+                      alt="Banner"
+                      className="w-full h-full object-cover transition-all duration-700 animate-in fade-in"
+                    />
+                    {banners[previewBannerIndex % banners.length]?.title && (
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-2">
+                        <span className="text-[10px] text-white font-medium line-clamp-1">
+                          {banners[previewBannerIndex % banners.length]?.title}
+                        </span>
+                      </div>
+                    )}
+                    {banners.length > 1 && (
+                      <div className="absolute bottom-1.5 right-2 flex items-center gap-1">
+                        {banners.map((b, idx) => (
+                          <div
+                            key={b.id}
+                            className={`h-1 rounded-full transition-all duration-300 ${
+                              idx === (previewBannerIndex % banners.length)
+                                ? "w-3 bg-white"
+                                : "w-1 bg-white/50"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -822,6 +1004,22 @@ export default function TampilanPage() {
           </div>
         </div>
       </div>
+
+      {/* Modern Custom Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!bannerToDelete}
+        onClose={() => {
+          if (!isDeletingBanner) setBannerToDelete(null);
+        }}
+        onConfirm={confirmDeleteBanner}
+        title="Hapus Banner Promosi"
+        description={`Apakah kamu yakin ingin menghapus banner "${bannerToDelete?.title || "ini"}"? Tindakan ini tidak dapat dibatalkan.`}
+        confirmText="Ya, Hapus"
+        cancelText="Batal"
+        loading={isDeletingBanner}
+        icon="trash"
+        variant="danger"
+      />
     </div>
   );
 }

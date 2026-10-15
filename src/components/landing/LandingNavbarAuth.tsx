@@ -4,12 +4,15 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, LayoutDashboard, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 export function LandingNavbarAuth() {
   const [user, setUser] = useState<{ username?: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     async function checkUser() {
@@ -54,34 +57,61 @@ export function LandingNavbarAuth() {
     );
   }
 
+  async function handleLogout() {
+    try {
+      setIsLoggingOut(true);
+      await supabase.auth.signOut();
+      setUser(null);
+      toast.success("Berhasil keluar dari akun.");
+      window.location.reload();
+    } catch {
+      toast.error("Gagal keluar dari akun.");
+    } finally {
+      setIsLoggingOut(false);
+      setShowLogoutModal(false);
+    }
+  }
+
   if (user) {
     return (
-      <div className="flex items-center gap-2.5">
-        <Link href="/dashboard">
+      <>
+        <div className="flex items-center gap-2.5">
+          <Link href="/dashboard">
+            <Button
+              size="sm"
+              className="bg-[#16A34A] hover:bg-[#15803D] text-white font-semibold text-xs sm:text-sm gap-1.5 shadow-sm shadow-[#16A34A]/20"
+            >
+              <LayoutDashboard className="h-3.5 w-3.5" />
+              <span>Dashboard (@{user.username})</span>
+            </Button>
+          </Link>
           <Button
+            variant="outline"
             size="sm"
-            className="bg-[#16A34A] hover:bg-[#15803D] text-white font-semibold text-xs sm:text-sm gap-1.5 shadow-sm shadow-[#16A34A]/20"
+            onClick={() => setShowLogoutModal(true)}
+            title="Keluar Akun"
+            className="text-xs text-slate-600 hover:text-red-600 hover:border-red-200"
           >
-            <LayoutDashboard className="h-3.5 w-3.5" />
-            <span>Dashboard (@{user.username})</span>
+            <LogOut className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Keluar</span>
           </Button>
-        </Link>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={async () => {
-            await supabase.auth.signOut();
-            setUser(null);
-            toast.success("Berhasil keluar dari akun.");
-            window.location.reload();
+        </div>
+
+        <ConfirmModal
+          isOpen={showLogoutModal}
+          onClose={() => {
+            if (!isLoggingOut) setShowLogoutModal(false);
           }}
-          title="Keluar Akun"
-          className="text-xs text-slate-600 hover:text-red-600 hover:border-red-200"
-        >
-          <LogOut className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Keluar</span>
-        </Button>
-      </div>
+          onConfirm={handleLogout}
+          title="Keluar dari Akun UdaLink"
+          description="Apakah kamu yakin ingin keluar dari akun UdaLink? Kamu perlu masuk kembali untuk mengakses dasbor etalasemu."
+          confirmText="Ya, Keluar"
+          cancelText="Batal"
+          loading={isLoggingOut}
+          icon="logout"
+          variant="danger"
+        />
+      </>
     );
   }
 

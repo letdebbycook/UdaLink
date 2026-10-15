@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import type { Category } from "@/types/database";
@@ -29,6 +30,10 @@ export default function KategoriPage() {
   // Edit kategori
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+
+  // Hapus kategori modal state
+  const [categoryToDelete, setCategoryToDelete] = useState<CategoryWithCount | null>(null);
+  const [isDeletingCategory, setIsDeletingCategory] = useState(false);
 
   const loadCategories = useCallback(async () => {
     try {
@@ -134,29 +139,28 @@ export default function KategoriPage() {
     }
   }
 
-  async function handleDelete(category: CategoryWithCount) {
-    const confirmMsg =
-      (category.product_count || 0) > 0
-        ? `Kategori "${category.name}" memiliki ${category.product_count} produk. Produk tidak akan terhapus, namun tidak lagi berkategori. Lanjutkan?`
-        : `Hapus kategori "${category.name}"?`;
+  function handleDelete(category: CategoryWithCount) {
+    setCategoryToDelete(category);
+  }
 
-    if (!window.confirm(confirmMsg)) return;
-
+  async function confirmDeleteCategory() {
+    if (!categoryToDelete) return;
     try {
-      setSaving(true);
+      setIsDeletingCategory(true);
       const { error } = await supabase
         .from("categories")
         .delete()
-        .eq("id", category.id);
+        .eq("id", categoryToDelete.id);
 
       if (error) throw error;
 
-      toast.success(`Kategori "${category.name}" berhasil dihapus`);
+      toast.success(`Kategori "${categoryToDelete.name}" berhasil dihapus`);
+      setCategoryToDelete(null);
       loadCategories();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Gagal menghapus kategori");
     } finally {
-      setSaving(false);
+      setIsDeletingCategory(false);
     }
   }
 
@@ -380,6 +384,26 @@ export default function KategoriPage() {
           ))}
         </div>
       )}
+
+      {/* Modern Custom Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!categoryToDelete}
+        onClose={() => {
+          if (!isDeletingCategory) setCategoryToDelete(null);
+        }}
+        onConfirm={confirmDeleteCategory}
+        title={`Hapus Kategori "${categoryToDelete?.name}"`}
+        description={
+          (categoryToDelete?.product_count || 0) > 0
+            ? `Kategori ini memiliki ${categoryToDelete?.product_count} produk. Produk-produk tersebut tidak akan terhapus, namun tidak lagi berkategori. Lanjutkan?`
+            : `Apakah kamu yakin ingin menghapus kategori "${categoryToDelete?.name}"? Tindakan ini tidak dapat dibatalkan.`
+        }
+        confirmText="Ya, Hapus"
+        cancelText="Batal"
+        loading={isDeletingCategory}
+        icon="trash"
+        variant="danger"
+      />
     </div>
   );
 }

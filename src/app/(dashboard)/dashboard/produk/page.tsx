@@ -18,6 +18,7 @@ import { compressImage } from "@/lib/image-compression";
 import { detectMarketplace, MARKETPLACE_CONFIG } from "@/lib/marketplace";
 import { formatRupiah } from "@/lib/utils";
 import type { Product, Category, MyPlanResponse, MarketplaceType } from "@/types/database";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 
 export default function ProdukPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -25,6 +26,7 @@ export default function ProdukPage() {
   const [plan, setPlan] = useState<MyPlanResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Filter & Search
   const [search, setSearch] = useState("");
@@ -33,6 +35,8 @@ export default function ProdukPage() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [isDeletingProduct, setIsDeletingProduct] = useState(false);
 
   // Form State
   const [formName, setFormName] = useState("");
@@ -198,7 +202,17 @@ export default function ProdukPage() {
         finalImageUrl = publicUrlData.publicUrl;
       }
 
-      const parsedPrice = formPrice ? parseFloat(formPrice.replace(/[^0-9]/g, "")) : null;
+      let parsedPrice: number | null = null;
+      if (formPrice.trim() !== "") {
+        const digitsOnly = formPrice.replace(/\D/g, "");
+        const num = parseInt(digitsOnly, 10);
+        if (isNaN(num) || num === 0) {
+          toast.error("Kosongkan harga atau masukkan harga yang sesuai (lebih dari 0).");
+          setSaving(false);
+          return;
+        }
+        parsedPrice = num;
+      }
 
       if (editingProduct) {
         // UPDATE
@@ -276,17 +290,24 @@ export default function ProdukPage() {
     }
   }
 
-  async function handleDeleteProduct(prod: Product) {
-    if (!window.confirm(`Hapus produk #${prod.number} - "${prod.name}"?`)) return;
+  function handleDeleteProduct(prod: Product) {
+    setProductToDelete(prod);
+  }
 
+  async function confirmDeleteProduct() {
+    if (!productToDelete) return;
     try {
-      const { error } = await supabase.from("products").delete().eq("id", prod.id);
+      setIsDeletingProduct(true);
+      const { error } = await supabase.from("products").delete().eq("id", productToDelete.id);
       if (error) throw error;
 
-      toast.success(`Produk #${prod.number} berhasil dihapus`);
+      toast.success(`Produk #${productToDelete.number} berhasil dihapus`);
+      setProductToDelete(null);
       loadData();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Gagal menghapus produk");
+    } finally {
+      setIsDeletingProduct(false);
     }
   }
 
@@ -764,12 +785,31 @@ export default function ProdukPage() {
                   <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                     Harga (Opsional)
                   </label>
-                  <Input
-                    type="number"
-                    placeholder="Contoh: 125000"
-                    value={formPrice}
-                    onChange={(e) => setFormPrice(e.target.value)}
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
+                      Rp
+                    </span>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      placeholder="Contoh: 125000"
+                      value={formPrice}
+                      onChange={(e) => {
+                        const cleaned = e.target.value.replace(/\D/g, "");
+                        setFormPrice(cleaned);
+                      }}
+                      onKeyDown={(e) => {
+                        if (["-", "+", "e", "E", "."].includes(e.key)) {
+                          e.preventDefault();
+                        }
+                      }}
+                      className="pl-9 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Bisa dikosongkan jika tidak ada harga.
+                  </p>
                 </div>
               </div>
 
@@ -834,6 +874,22 @@ export default function ProdukPage() {
           </div>
         </div>
       )}
+
+      {/* Modern Custom Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!productToDelete}
+        onClose={() => {
+          if (!isDeletingProduct) setProductToDelete(null);
+        }}
+        onConfirm={confirmDeleteProduct}
+        title={`Hapus Produk #${productToDelete?.number}`}
+        description={`Apakah kamu yakin ingin menghapus produk "${productToDelete?.name}"? Produk yang dihapus tidak dapat dipulihkan.`}
+        confirmText="Ya, Hapus"
+        cancelText="Batal"
+        loading={isDeletingProduct}
+        icon="trash"
+        variant="danger"
+      />
     </div>
   );
 }

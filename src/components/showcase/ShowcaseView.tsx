@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -31,6 +31,19 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // Banner Carousel State
+  const [activeBannerIndex, setActiveBannerIndex] = useState(0);
+  const [isBannerPaused, setIsBannerPaused] = useState(false);
+
+  // Auto carousel cycling
+  useEffect(() => {
+    if (banners.length <= 1 || isBannerPaused) return;
+    const timer = setInterval(() => {
+      setActiveBannerIndex((prev) => (prev + 1) % banners.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [banners.length, isBannerPaused]);
 
   // Filter & Search Logic
   const filteredProducts = useMemo(() => {
@@ -206,7 +219,11 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
           <div className="flex items-center gap-2.5 mt-4">
             {profile.instagram && (
               <a
-                href={`https://instagram.com/${profile.instagram.replace(/^@/, "")}`}
+                href={
+                  profile.instagram.startsWith("http")
+                    ? profile.instagram
+                    : `https://instagram.com/${profile.instagram.replace(/^@+/, "")}`
+                }
                 target="_blank"
                 rel="noreferrer"
                 className="p-2.5 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl transition-transform hover:scale-110 active:scale-95 shadow-xs"
@@ -227,7 +244,11 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
 
             {profile.tiktok && (
               <a
-                href={`https://tiktok.com/@${profile.tiktok.replace(/^@/, "")}`}
+                href={
+                  profile.tiktok.startsWith("http")
+                    ? profile.tiktok
+                    : `https://tiktok.com/@${profile.tiktok.replace(/^@+/, "")}`
+                }
                 target="_blank"
                 rel="noreferrer"
                 className="p-2.5 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl transition-transform hover:scale-110 active:scale-95 shadow-xs"
@@ -246,7 +267,13 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
 
             {profile.youtube && (
               <a
-                href={profile.youtube}
+                href={
+                  profile.youtube.startsWith("http")
+                    ? profile.youtube
+                    : profile.youtube.startsWith("@")
+                    ? `https://youtube.com/${profile.youtube}`
+                    : `https://youtube.com/@${profile.youtube}`
+                }
                 target="_blank"
                 rel="noreferrer"
                 className="p-2.5 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl transition-transform hover:scale-110 active:scale-95 shadow-xs"
@@ -266,7 +293,11 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
 
             {profile.whatsapp && (
               <a
-                href={`https://wa.me/${profile.whatsapp}`}
+                href={
+                  profile.whatsapp.startsWith("http")
+                    ? profile.whatsapp
+                    : `https://wa.me/${profile.whatsapp.replace(/[^0-9]/g, "")}`
+                }
                 target="_blank"
                 rel="noreferrer"
                 className="p-2.5 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl transition-transform hover:scale-110 active:scale-95 shadow-xs"
@@ -283,40 +314,107 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
           </div>
         </div>
 
-        {/* 2. PROMOTIONAL BANNERS (Sliding, rounded corners) */}
+        {/* 2. PROMOTIONAL BANNERS CAROUSEL ANIMATED */}
         {banners.length > 0 && (
-          <div className="px-4 py-2">
-            <div className="flex gap-3 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory">
-              {banners.map((banner) => (
-                <div
-                  key={banner.id}
-                  className="min-w-full snap-center rounded-2xl overflow-hidden relative shadow-sm aspect-[21/9] bg-slate-200 group"
-                >
-                  <Image
-                    src={banner.image_url}
-                    alt={banner.title || "Banner Promo"}
-                    fill
-                    sizes="(max-width: 480px) 100vw, 480px"
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  {banner.title && (
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent p-3 flex flex-col justify-end">
-                      <p className="text-white text-xs font-bold leading-snug line-clamp-2">
-                        {banner.title}
-                      </p>
-                    </div>
-                  )}
-                  {banner.link_url && (
-                    <a
-                      href={banner.link_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="absolute inset-0"
-                      aria-label={banner.title || "Tautan banner"}
+          <div
+            className="px-4 py-2"
+            onMouseEnter={() => setIsBannerPaused(true)}
+            onMouseLeave={() => setIsBannerPaused(false)}
+            onTouchStart={() => setIsBannerPaused(true)}
+            onTouchEnd={() => setIsBannerPaused(false)}
+          >
+            <div
+              className="relative rounded-2xl overflow-hidden aspect-[21/9] bg-slate-200 shadow-sm border group"
+              style={{ borderColor: theme.cardBorder }}
+            >
+              {/* Carousel Track */}
+              <div
+                className="flex h-full transition-transform duration-700 ease-out"
+                style={{
+                  transform: `translateX(-${activeBannerIndex * 100}%)`,
+                  width: `${banners.length * 100}%`,
+                }}
+              >
+                {banners.map((banner) => (
+                  <div
+                    key={banner.id}
+                    className="w-full h-full relative shrink-0 group overflow-hidden"
+                  >
+                    <Image
+                      src={banner.image_url}
+                      alt={banner.title || "Banner Promo"}
+                      fill
+                      unoptimized
+                      sizes="(max-width: 480px) 100vw, 480px"
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                  )}
-                </div>
-              ))}
+                    {banner.title && (
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent p-3 flex flex-col justify-end">
+                        <p className="text-white text-xs font-bold leading-snug line-clamp-2">
+                          {banner.title}
+                        </p>
+                      </div>
+                    )}
+                    {banner.link_url && (
+                      <a
+                        href={banner.link_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="absolute inset-0 z-10"
+                        aria-label={banner.title || "Tautan banner"}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Prev / Next navigation buttons */}
+              {banners.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveBannerIndex((prev) => (prev - 1 + banners.length) % banners.length);
+                    }}
+                    aria-label="Banner sebelumnya"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-xs text-sm"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveBannerIndex((prev) => (prev + 1) % banners.length);
+                    }}
+                    aria-label="Banner berikutnya"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-xs text-sm"
+                  >
+                    ›
+                  </button>
+
+                  {/* Dot Indicators */}
+                  <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20 px-2 py-1 rounded-full bg-black/30 backdrop-blur-xs">
+                    {banners.map((b, idx) => (
+                      <button
+                        key={b.id}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveBannerIndex(idx);
+                        }}
+                        aria-label={`Lihat banner ${idx + 1}`}
+                        className={`h-1.5 rounded-full transition-all duration-300 ${
+                          idx === activeBannerIndex
+                            ? "w-4 bg-white"
+                            : "w-1.5 bg-white/50 hover:bg-white/80"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -646,7 +744,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
         {/* 8. FLOATING WHATSAPP BUTTON (Pojok kanan bawah jika nomor WA diisi) */}
         {profile.whatsapp && (
           <a
-            href={`https://wa.me/${profile.whatsapp}?text=Halo%20${encodeURIComponent(
+            href={`https://wa.me/${profile.whatsapp.replace(/[^0-9]/g, "")}?text=Halo%20${encodeURIComponent(
               profile.display_name
             )},%20saya%20mau%20tanya%20tentang%20produk%20di%20etalase%20kamu`}
             target="_blank"
