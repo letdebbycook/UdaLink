@@ -23,36 +23,58 @@ export default function RedirectPage() {
 
     async function handleRedirect() {
       try {
-        // Ambil data produk (affiliate_url dan status)
-        const { data: product, error: fetchErr } = await supabase
-          .from("products")
-          .select("affiliate_url, is_active, name")
-          .eq("id", productId)
-          .single();
+        // 1. Ambil affiliate_url & catat statistik klik lewat RPC record_click (Security Definer, aman untuk pengunjung publik/anonim)
+        let targetUrl: string | null = null;
 
-        if (fetchErr || !product) {
-          if (isMounted) setError("Produk tidak ditemukan atau tautan sudah kadaluarsa.");
-          return;
-        }
-
-        if (!product.is_active) {
-          if (isMounted) setError("Produk ini sedang dinonaktifkan oleh pemilik etalase.");
-          return;
-        }
-
-        // Catat klik via RPC record_click (asinkron, jangan blokir redirect bila error)
         try {
-          await supabase.rpc("record_click", { p_product_id: productId });
+          const { data: rpcData, error: rpcErr } = await supabase.rpc("record_click", {
+            p_product_id: productId,
+          });
+
+          if (rpcData && typeof rpcData === "object" && "affiliate_url" in rpcData) {
+            targetUrl = (rpcData as { affiliate_url: string }).affiliate_url;
+          } else if (rpcErr) {
+            console.warn("RPC record_click gagal, mencoba fallback:", rpcErr.message);
+          }
         } catch (rpcErr) {
-          console.warn("Gagal mencatat klik:", rpcErr);
+          console.warn("Exception saat memanggil record_click:", rpcErr);
         }
 
-        // Redirect langsung ke marketplace
-        window.location.replace(product.affiliate_url);
+        // 2. Fallback: query tabel products langsung jika RPC belum mengembalikan URL
+        if (!targetUrl) {
+          const { data: product, error: fetchErr } = await supabase
+            .from("products")
+            .select("affiliate_url, is_active, name")
+            .eq("id", productId)
+            .single();
+
+          if (fetchErr || !product) {
+            if (isMounted) setError("Produk tidak ditemukan atau tautan sudah kadaluarsa.");
+            return;
+          }
+
+          if (!product.is_active) {
+            if (isMounted) setError("Produk ini sedang dinonaktifkan oleh pemilik etalase.");
+            return;
+          }
+
+          targetUrl = product.affiliate_url;
+        }
+
+        // 3. Alihkan pengunjung langsung ke marketplace tujuan
+        if (targetUrl) {
+          const finalUrl =
+            targetUrl.startsWith("http://") || targetUrl.startsWith("https://")
+              ? targetUrl
+              : `https://${targetUrl}`;
+          window.location.replace(finalUrl);
+        } else {
+          if (isMounted) setError("Tautan tujuan produk tidak valid.");
+        }
       } catch (err: unknown) {
         if (isMounted) {
           setError(
-            err instanceof Error ? err.message : "Terjadi kesalahan saat mengalihkan."
+            err instanceof Error ? err.message : "Terjadi kesalahan saat mengalihkan ke marketplace."
           );
         }
       }
