@@ -26,7 +26,8 @@ yarn-error.log*
 supabase/.temp/
 
 # local env files
-.env.local
+.env
+.env*.local
 .env.local
 
 # vercel
@@ -38,4 +39,22 @@ next-env.d.ts
 
 # agents & local tooling
 .agents/
+
+# internal project docs & sprint tasks
+*.pdf
+*.docx
+/sprint/
+sprint_backend_dan_frontend_udalink.md
+
+# obsolete root lib
+/lib/
+
+# ad-hoc local sql scripts
+supabase/fix-nando-auth.sql
+supabase/make-admin.sql
+supabase/sprint3-rpc-apply.sql
+supabase/be-bugfix-patch.sql
+
+# unused default next.js assets
+public/*.svg
 
