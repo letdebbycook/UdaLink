@@ -11,6 +11,16 @@ export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
+  // Otomatis tangkap dan teruskan code OAuth dari Google/Supabase jika mendarat di luar /auth/callback
+  const searchParams = request.nextUrl.searchParams;
+  if (searchParams.has("code") && !request.nextUrl.pathname.startsWith("/auth/callback")) {
+    const callbackUrl = new URL("/auth/callback", request.url);
+    searchParams.forEach((value, key) => {
+      callbackUrl.searchParams.set(key, value);
+    });
+    return NextResponse.redirect(callbackUrl);
+  }
+
   if (!supabaseUrl || !supabaseAnonKey) {
     return response;
   }
