@@ -1,19 +1,23 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Link2,
   LayoutDashboard,
   CreditCard,
   Users,
   Settings,
-  ArrowLeft,
   Shield,
+  LogOut,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 export default function AdminLayout({
   children,
@@ -21,6 +25,24 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [loadingLogout, setLoadingLogout] = useState(false);
+
+  const handleLogout = async () => {
+    setLoadingLogout(true);
+    try {
+      await supabase.auth.signOut();
+      toast.success("Berhasil keluar dari sesi admin.");
+      router.push("/masuk");
+    } catch (err) {
+      console.error("Gagal logout:", err);
+      toast.error("Gagal keluar akun.");
+    } finally {
+      setLoadingLogout(false);
+      setShowLogoutModal(false);
+    }
+  };
 
   const adminNav = [
     { name: "Ringkasan", href: "/admin", icon: LayoutDashboard },
@@ -79,13 +101,13 @@ export default function AdminLayout({
           })}
 
           <div className="pt-6 mt-6 border-t border-slate-800">
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+            <button
+              onClick={() => setShowLogoutModal(true)}
+              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-rose-300 hover:text-rose-200 hover:bg-rose-500/10 transition-colors text-left"
             >
-              <ArrowLeft className="h-4 w-4 text-slate-400" />
-              <span>Ke Dashboard Affiliator</span>
-            </Link>
+              <LogOut className="h-4 w-4 text-rose-400" />
+              <span>Keluar Sesi Admin</span>
+            </button>
           </div>
         </div>
 
@@ -103,13 +125,13 @@ export default function AdminLayout({
             <Shield className="h-5 w-5 text-emerald-400" />
             <span className="font-bold text-sm tracking-wide">UdaLink Panel Admin</span>
           </div>
-          <Link
-            href="/dashboard"
-            className="text-xs text-slate-300 bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700 flex items-center gap-1 min-h-[36px]"
+          <button
+            onClick={() => setShowLogoutModal(true)}
+            className="text-xs text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 px-2.5 py-1.5 rounded-lg border border-rose-500/20 flex items-center gap-1.5 min-h-[36px]"
           >
-            <ArrowLeft className="h-3 w-3" />
-            <span>Dashboard</span>
-          </Link>
+            <LogOut className="h-3.5 w-3.5 text-rose-400" />
+            <span>Keluar</span>
+          </button>
         </div>
 
         {/* Mobile Navigation Sub-bar */}
@@ -144,6 +166,20 @@ export default function AdminLayout({
           {children}
         </main>
       </div>
+
+      {/* MODAL KONFIRMASI LOGOUT ADMIN */}
+      <ConfirmModal
+        isOpen={showLogoutModal}
+        title="Keluar dari Panel Admin?"
+        description="Sesi administrator Anda akan diakhiri dan dialihkan ke halaman masuk."
+        confirmText="Ya, Keluar"
+        cancelText="Batal"
+        variant="danger"
+        icon="logout"
+        loading={loadingLogout}
+        onConfirm={handleLogout}
+        onClose={() => setShowLogoutModal(false)}
+      />
     </div>
   );
 }

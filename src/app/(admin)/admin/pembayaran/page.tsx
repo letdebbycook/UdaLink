@@ -14,6 +14,9 @@ import {
   Check,
   X,
   AlertCircle,
+  Search,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -43,6 +46,9 @@ interface PaymentItem {
 export default function AdminPembayaranPage() {
   const [payments, setPayments] = useState<PaymentItem[]>([]);
   const [activeTab, setActiveTab] = useState<"pending" | "approved" | "rejected">("pending");
+  const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
   const [loading, setLoading] = useState(true);
   const [selectedPayment, setSelectedPayment] = useState<PaymentItem | null>(null);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
@@ -201,7 +207,21 @@ export default function AdminPembayaranPage() {
     }
   };
 
-  const filteredPayments = payments.filter((p) => p.status === activeTab);
+  const query = search.toLowerCase().trim();
+  const filteredPayments = payments
+    .filter((p) => p.status === activeTab)
+    .filter((p) => {
+      if (!query) return true;
+      const matchSender = p.sender_name?.toLowerCase().includes(query);
+      const matchBank = p.sender_bank?.toLowerCase().includes(query);
+      const matchUser = p.user?.username?.toLowerCase().includes(query);
+      const matchDisplay = p.user?.display_name?.toLowerCase().includes(query);
+      const matchAmount = p.amount?.toString().includes(query);
+      return matchSender || matchBank || matchUser || matchDisplay || matchAmount;
+    });
+
+  const totalPages = Math.max(1, Math.ceil(filteredPayments.length / pageSize));
+  const paginatedPayments = filteredPayments.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const formatRupiah = (val: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -222,46 +242,78 @@ export default function AdminPembayaranPage() {
         </p>
       </div>
 
-      {/* Tabs Menu */}
-      <div className="flex border-b border-[#E2E8F0] gap-2">
-        <button
-          onClick={() => setActiveTab("pending")}
-          className={`pb-3 px-4 text-xs font-semibold border-b-2 flex items-center gap-2 transition-colors ${
-            activeTab === "pending"
-              ? "border-[#16A34A] text-[#16A34A]"
-              : "border-transparent text-[#64748B] hover:text-[#0F172A]"
-          }`}
-        >
-          <Clock className="h-4 w-4 text-amber-500" />
-          <span>Menunggu</span>
-          <Badge className="bg-amber-100 text-amber-800 text-[10px] ml-1">
-            {payments.filter((p) => p.status === "pending").length}
-          </Badge>
-        </button>
+      {/* Tabs Menu & Search Filter */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#E2E8F0] pb-3">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar">
+          <button
+            onClick={() => {
+              setActiveTab("pending");
+              setCurrentPage(1);
+            }}
+            className={`pb-2 px-3 text-xs font-semibold border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap ${
+              activeTab === "pending"
+                ? "border-[#16A34A] text-[#16A34A]"
+                : "border-transparent text-[#64748B] hover:text-[#0F172A]"
+            }`}
+          >
+            <Clock className="h-4 w-4 text-amber-500" />
+            <span>Menunggu</span>
+            <Badge className="bg-amber-100 text-amber-800 text-[10px] ml-1">
+              {payments.filter((p) => p.status === "pending").length}
+            </Badge>
+          </button>
 
-        <button
-          onClick={() => setActiveTab("approved")}
-          className={`pb-3 px-4 text-xs font-semibold border-b-2 flex items-center gap-2 transition-colors ${
-            activeTab === "approved"
-              ? "border-[#16A34A] text-[#16A34A]"
-              : "border-transparent text-[#64748B] hover:text-[#0F172A]"
-          }`}
-        >
-          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-          <span>Disetujui</span>
-        </button>
+          <button
+            onClick={() => {
+              setActiveTab("approved");
+              setCurrentPage(1);
+            }}
+            className={`pb-2 px-3 text-xs font-semibold border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap ${
+              activeTab === "approved"
+                ? "border-[#16A34A] text-[#16A34A]"
+                : "border-transparent text-[#64748B] hover:text-[#0F172A]"
+            }`}
+          >
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            <span>Disetujui</span>
+            <Badge variant="outline" className="text-[#64748B] text-[10px] ml-1">
+              {payments.filter((p) => p.status === "approved").length}
+            </Badge>
+          </button>
 
-        <button
-          onClick={() => setActiveTab("rejected")}
-          className={`pb-3 px-4 text-xs font-semibold border-b-2 flex items-center gap-2 transition-colors ${
-            activeTab === "rejected"
-              ? "border-[#16A34A] text-[#16A34A]"
-              : "border-transparent text-[#64748B] hover:text-[#0F172A]"
-          }`}
-        >
-          <XCircle className="h-4 w-4 text-red-500" />
-          <span>Ditolak</span>
-        </button>
+          <button
+            onClick={() => {
+              setActiveTab("rejected");
+              setCurrentPage(1);
+            }}
+            className={`pb-2 px-3 text-xs font-semibold border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap ${
+              activeTab === "rejected"
+                ? "border-[#16A34A] text-[#16A34A]"
+                : "border-transparent text-[#64748B] hover:text-[#0F172A]"
+            }`}
+          >
+            <XCircle className="h-4 w-4 text-red-500" />
+            <span>Ditolak</span>
+            <Badge variant="outline" className="text-[#64748B] text-[10px] ml-1">
+              {payments.filter((p) => p.status === "rejected").length}
+            </Badge>
+          </button>
+        </div>
+
+        {/* Input Search Pembayaran */}
+        <div className="relative max-w-xs w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+          <Input
+            type="text"
+            placeholder="Cari nama, bank, atau @user..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="pl-8 text-xs h-9"
+          />
+        </div>
       </div>
 
       {/* Daftar Tabel Pembayaran */}
@@ -283,7 +335,7 @@ export default function AdminPembayaranPage() {
         <div className="space-y-3">
           {/* Mobile Card View (md:hidden) */}
           <div className="md:hidden space-y-3">
-            {filteredPayments.map((p) => (
+            {paginatedPayments.map((p) => (
               <Card key={p.id} className="border-[#E2E8F0] shadow-xs bg-white">
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-start justify-between gap-2">
@@ -368,7 +420,7 @@ export default function AdminPembayaranPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E2E8F0]">
-                  {filteredPayments.map((p) => (
+                  {paginatedPayments.map((p) => (
                     <tr key={p.id} className="hover:bg-[#F8FAFC] transition-colors">
                       <td className="py-3.5 px-4 text-[#64748B] whitespace-nowrap">
                         {format(new Date(p.created_at), "dd MMM yyyy, HH:mm", { locale: localeId })}
@@ -426,6 +478,47 @@ export default function AdminPembayaranPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs text-slate-600 bg-white p-4 rounded-xl border border-slate-200">
+            <div>
+              Menampilkan{" "}
+              <strong className="text-slate-900">
+                {filteredPayments.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}
+              </strong>{" "}
+              -{" "}
+              <strong className="text-slate-900">
+                {Math.min(currentPage * pageSize, filteredPayments.length)}
+              </strong>{" "}
+              dari <strong className="text-slate-900">{filteredPayments.length}</strong> transaksi
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="h-8 px-2.5 text-xs gap-1"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+                <span>Sebelumnya</span>
+              </Button>
+              <span className="px-2 font-medium">
+                Halaman {currentPage} dari {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages}
+                className="h-8 px-2.5 text-xs gap-1"
+              >
+                <span>Berikutnya</span>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
             </div>
           </div>
         </div>

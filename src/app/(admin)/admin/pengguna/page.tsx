@@ -14,6 +14,9 @@ import {
   Loader2,
   ShieldCheck,
   ShieldAlert,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,6 +41,9 @@ interface UserItem {
 export default function AdminPenggunaPage() {
   const [users, setUsers] = useState<UserItem[]>([]);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "pro" | "free" | "suspended" | "admin">("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -50,6 +56,7 @@ export default function AdminPenggunaPage() {
 
       if (error) throw error;
       setUsers((data as unknown as UserItem[]) || []);
+      setCurrentPage(1);
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : "Terjadi kesalahan";
       toast.error(`Gagal memuat pengguna: ${errorMsg}`);
@@ -66,6 +73,19 @@ export default function AdminPenggunaPage() {
     e.preventDefault();
     fetchUsers(search);
   };
+
+  // Client-side filtering
+  const filteredUsers = users.filter((u) => {
+    if (statusFilter === "pro") return u.is_pro && !u.is_suspended;
+    if (statusFilter === "free") return !u.is_pro && !u.is_suspended && u.role !== "admin";
+    if (statusFilter === "suspended") return u.is_suspended;
+    if (statusFilter === "admin") return u.role === "admin";
+    return true;
+  });
+
+  // Client-side pagination
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+  const paginatedUsers = filteredUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handleTogglePro = async (user: UserItem, givePro: boolean) => {
     setActionLoading(user.id);
@@ -147,25 +167,51 @@ export default function AdminPenggunaPage() {
         </form>
       </div>
 
+      {/* Filter Status Pills */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
+        {[
+          { id: "all", label: `Semua (${users.length})` },
+          { id: "pro", label: `Pro Aktif (${users.filter(u => u.is_pro && !u.is_suspended).length})` },
+          { id: "free", label: `Gratis (${users.filter(u => !u.is_pro && !u.is_suspended && u.role !== "admin").length})` },
+          { id: "suspended", label: `Dinonaktifkan (${users.filter(u => u.is_suspended).length})` },
+          { id: "admin", label: `Admin (${users.filter(u => u.role === "admin").length})` },
+        ].map((item) => (
+          <button
+            key={item.id}
+            onClick={() => {
+              setStatusFilter(item.id as typeof statusFilter);
+              setCurrentPage(1);
+            }}
+            className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors ${
+              statusFilter === item.id
+                ? "bg-[#16A34A] text-white shadow-2xs font-semibold"
+                : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200"
+            }`}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
       {loading ? (
         <div className="flex justify-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-[#16A34A]" />
         </div>
-      ) : users.length === 0 ? (
+      ) : filteredUsers.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center space-y-2">
             <Users className="h-8 w-8 text-[#94A3B8] mx-auto" />
             <p className="text-sm font-semibold text-[#0F172A]">Pengguna tidak ditemukan</p>
             <p className="text-xs text-[#64748B]">
-              Coba gunakan kata kunci pencarian yang lain.
+              Coba gunakan kata kunci pencarian atau ganti filter status.
             </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {/* Mobile Card View (md:hidden) */}
           <div className="md:hidden space-y-3">
-            {users.map((u) => {
+            {paginatedUsers.map((u) => {
               const isBusy = actionLoading === u.id;
               return (
                 <Card key={u.id} className="border-[#E2E8F0] shadow-xs bg-white">
@@ -281,7 +327,7 @@ export default function AdminPenggunaPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E2E8F0]">
-                  {users.map((u) => {
+                  {paginatedUsers.map((u) => {
                     const isBusy = actionLoading === u.id;
                     return (
                       <tr key={u.id} className="hover:bg-[#F8FAFC] transition-colors">
@@ -382,6 +428,47 @@ export default function AdminPenggunaPage() {
                   })}
                 </tbody>
               </table>
+            </div>
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs text-slate-600 bg-white p-4 rounded-xl border border-slate-200">
+            <div>
+              Menampilkan{" "}
+              <strong className="text-slate-900">
+                {filteredUsers.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}
+              </strong>{" "}
+              -{" "}
+              <strong className="text-slate-900">
+                {Math.min(currentPage * pageSize, filteredUsers.length)}
+              </strong>{" "}
+              dari <strong className="text-slate-900">{filteredUsers.length}</strong> pengguna
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="h-8 px-2.5 text-xs gap-1"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+                <span>Sebelumnya</span>
+              </Button>
+              <span className="px-2 font-medium">
+                Halaman {currentPage} dari {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages}
+                className="h-8 px-2.5 text-xs gap-1"
+              >
+                <span>Berikutnya</span>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
             </div>
           </div>
         </div>
