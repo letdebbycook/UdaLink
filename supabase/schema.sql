@@ -286,8 +286,17 @@ DECLARE
     v_username TEXT;
     v_display_name TEXT;
     v_payment_code INTEGER;
+    v_google_email TEXT := NULLIF(NEW.email, '');
 BEGIN
+    -- Prioritas 1: username eksplisit dari pendaftaran
     v_raw_username := lower(trim(COALESCE(NEW.raw_user_meta_data->>'username', '')));
+
+    -- Jika tidak ada (mis. sign-up via Google), coba turunkan dari email
+    IF COALESCE(v_raw_username, '') = '' AND v_google_email IS NOT NULL THEN
+        v_raw_username := lower(split_part(v_google_email, '@', 1));
+    END IF;
+
+    v_raw_username := lower(trim(COALESCE(v_raw_username, '')));
 
     -- Jika username kosong atau tidak valid, generate username fallback yang aman
     IF v_raw_username ~ '^[a-z0-9_]{3,30}$' AND v_raw_username NOT IN (
@@ -299,7 +308,13 @@ BEGIN
         v_username := 'user_' || substr(md5(NEW.id::text || clock_timestamp()::text), 1, 8);
     END IF;
 
-    v_display_name := COALESCE(NEW.raw_user_meta_data->>'display_name', v_username);
+    -- Display name: metadata pendaftaran, lalu nama Google, lalu username
+    v_display_name := COALESCE(
+        NULLIF(trim(COALESCE(NEW.raw_user_meta_data->>'display_name', '')), ''),
+        NULLIF(trim(COALESCE(NEW.raw_user_meta_data->>'full_name', '')), ''),
+        NULLIF(trim(COALESCE(NEW.raw_user_meta_data->>'name', '')), ''),
+        v_username
+    );
     IF char_length(v_display_name) > 50 THEN
         v_display_name := substr(v_display_name, 1, 50);
     END IF;

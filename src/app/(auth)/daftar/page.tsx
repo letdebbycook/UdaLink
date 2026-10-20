@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Check, X, Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { GoogleIcon } from "@/components/ui/google-icon";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -19,6 +20,32 @@ export default function DaftarPage() {
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [activeUser, setActiveUser] = useState<{ email?: string; username?: string } | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    try {
+      // Pendaftaran via Google memakai OAuth yang sama; Supabase otomatis
+      // membuat akun baru jika email Google belum terdaftar.
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            // Selalu tampilkan pemilih akun agar pengguna bisa memilih akun lain
+            prompt: "select_account",
+          },
+        },
+      });
+      if (error) {
+        toast.error(`Gagal menghubungi Google: ${error.message}`);
+        setGoogleLoading(false);
+      }
+    } catch {
+      toast.error("Terjadi kesalahan saat menghubungi Google.");
+      setGoogleLoading(false);
+    }
+  };
 
   // Periksa apakah user masih memiliki sesi login aktif
   React.useEffect(() => {
@@ -183,6 +210,30 @@ export default function DaftarPage() {
         </div>
       ) : (
         <>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleGoogleSignIn}
+            disabled={googleLoading || loading}
+            className="w-full h-11 text-sm font-semibold gap-2.5"
+          >
+            {googleLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <GoogleIcon className="h-4 w-4" />
+            )}
+            <span>Daftar dengan Google</span>
+          </Button>
+
+          <div className="relative py-1">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-[#E2E8F0]" />
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-white px-3 text-[11px] text-[#64748B]">atau daftar pakai email</span>
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Username */}
             <div className="space-y-1.5">

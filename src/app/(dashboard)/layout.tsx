@@ -103,7 +103,10 @@ export default function DashboardLayout({
     { name: "Produk", href: "/dashboard/produk", icon: Package },
     { name: "Kategori", href: "/dashboard/kategori", icon: Layers },
     { name: "Tampilan", href: "/dashboard/tampilan", icon: Palette },
-    { name: "Statistik", href: "/dashboard/statistik", icon: BarChart2 },
+    // Statistik khusus pengguna Pro
+    ...(currentUser.isPro
+      ? [{ name: "Statistik", href: "/dashboard/statistik", icon: BarChart2 }]
+      : []),
     { name: "Langganan", href: "/dashboard/langganan", icon: CreditCard },
     { name: "Akun", href: "/dashboard/akun", icon: User },
   ];
@@ -113,12 +116,19 @@ export default function DashboardLayout({
     { name: "Ringkasan", href: "/dashboard", icon: LayoutDashboard },
     { name: "Produk", href: "/dashboard/produk", icon: Package },
     { name: "Tampilan", href: "/dashboard/tampilan", icon: Palette },
-    { name: "Statistik", href: "/dashboard/statistik", icon: BarChart2 },
+    // Statistik khusus pengguna Pro; Free mendapat pintasan Langganan
+    currentUser.isPro
+      ? { name: "Statistik", href: "/dashboard/statistik", icon: BarChart2 }
+      : { name: "Langganan", href: "/dashboard/langganan", icon: CreditCard },
     { name: "Lainnya", action: () => setShowMoreMenu(true), icon: MoreHorizontal },
   ];
 
   const moreItems = [
     { name: "Kategori", href: "/dashboard/kategori", icon: Layers },
+    // Statistik khusus pengguna Pro
+    ...(currentUser.isPro
+      ? [{ name: "Statistik", href: "/dashboard/statistik", icon: BarChart2 }]
+      : []),
     { name: "Langganan", href: "/dashboard/langganan", icon: CreditCard },
     { name: "Pengaturan Akun", href: "/dashboard/akun", icon: User },
     ...(currentUser.isAdmin
