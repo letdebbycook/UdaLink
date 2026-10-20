@@ -1,21 +1,38 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, Suspense } from "react";
 import {
   CreditCard, ShieldCheck, Check, Clock, CheckCircle2,
   XCircle, Copy, Upload, AlertCircle, AlertTriangle,
-  Loader2, ArrowRight, ExternalLink
+  Loader2, ArrowRight, ExternalLink, BarChart2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { formatRupiah, formatTanggal } from "@/lib/utils";
 import type { MyPlanResponse, Payment } from "@/types/database";
 
 export default function LanggananPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="h-8 w-8 animate-spin text-[#16A34A]" />
+        </div>
+      }
+    >
+      <LanggananContent />
+    </Suspense>
+  );
+}
+
+function LanggananContent() {
+  const searchParams = useSearchParams();
+  const cameFromStatistik = searchParams.get("upgrade") === "statistik";
   const [plan, setPlan] = useState<MyPlanResponse | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -149,6 +166,19 @@ export default function LanggananPage() {
           Kelola paket tokomu untuk membuka fitur-fitur profesional affiliator.
         </p>
       </div>
+
+      {/* Banner penjelasan: dialihkan dari halaman Statistik karena bukan Pro */}
+      {cameFromStatistik && !isPro && (
+        <div className="p-4 rounded-2xl bg-[#F0FDF4] border border-[#BBF7D0] flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-emerald-100 text-[#16A34A] flex items-center justify-center shrink-0">
+            <BarChart2 className="w-5 h-5" />
+          </div>
+          <div className="flex-1 text-sm text-slate-700">
+            <strong className="text-slate-900">Statistik adalah fitur Pro.</strong> Upgrade ke
+            paket UdaLink PRO untuk membuka menu Statistik dan analisis klik hingga 30 hari.
+          </div>
+        </div>
+      )}
 
       {/* Banner Pengingat Kedaluwarsa (≤ 3 Hari) */}
       {isExpiringSoon && (

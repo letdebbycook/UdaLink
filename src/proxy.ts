@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -38,6 +38,17 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
+  // Membership diambil sekali dan dipakai ulang oleh semua pemeriksaan di bawah
+  const membership = user
+    ? (
+        await supabase
+          .from("memberships")
+          .select("role, is_suspended, pro_until")
+          .eq("user_id", user.id)
+          .single()
+      ).data
+    : null;
+
   // 1. Proteksi Halaman Dashboard (/dashboard/...)
   if (pathname.startsWith("/dashboard")) {
     if (!user) {
@@ -55,13 +66,6 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
 
-    // Cek role admin dari tabel memberships
-    const { data: membership } = await supabase
-      .from("memberships")
-      .select("role, is_suspended")
-      .eq("user_id", user.id)
-      .single();
-
     if (!membership || membership.role !== "admin") {
       // Jika bukan admin, lempar ke dashboard
       return NextResponse.redirect(new URL("/dashboard", request.url));
@@ -69,8 +73,16 @@ export async function middleware(request: NextRequest) {
   }
 
   // 3. Jika sudah login, cegah buka halaman /masuk
+  //    Admin diarahkan ke panel admin, pengguna lain ke dashboard,
+  //    kecuali ada param redirect yang aman (path lokal).
   if (user && pathname === "/masuk") {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    const redirectParam = request.nextUrl.searchParams.get("redirect");
+    const safeRedirect =
+      redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//")
+        ? redirectParam
+        : null;
+    const fallback = membership?.role === "admin" ? "/admin" : "/dashboard";
+    return NextResponse.redirect(new URL(safeRedirect ?? fallback, request.url));
   }
 
   // 4. Cek akun dinonaktifkan (is_suspended) untuk user yang sudah login di rute terproteksi
@@ -78,12 +90,6 @@ export async function middleware(request: NextRequest) {
   const isSuspendedPage = pathname === "/akun-dinonaktifkan";
 
   if (user && isProtectedRoute && !isSuspendedPage) {
-    const { data: membership } = await supabase
-      .from("memberships")
-      .select("is_suspended")
-      .eq("user_id", user.id)
-      .single();
-
     if (membership?.is_suspended === true) {
       return NextResponse.redirect(new URL("/akun-dinonaktifkan", request.url));
     }
@@ -91,15 +97,19 @@ export async function middleware(request: NextRequest) {
 
   // 5. Jika sudah login dan tidak suspended, cegah akses ke halaman dinonaktifkan
   if (user && isSuspendedPage) {
-    const { data: membership } = await supabase
-      .from("memberships")
-      .select("is_suspended")
-      .eq("user_id", user.id)
-      .single();
-
     if (!membership?.is_suspended) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
+  }
+
+  // 6. Halaman statistik khusus pengguna Pro (pemeriksaan di sisi server)
+  const isPro =
+    membership?.pro_until != null && new Date(membership.pro_until).getTime() > Date.now();
+
+  if (user && pathname.startsWith("/dashboard/statistik") && !isPro) {
+    const redirectUrl = new URL("/dashboard/langganan", request.url);
+    redirectUrl.searchParams.set("upgrade", "statistik");
+    return NextResponse.redirect(redirectUrl);
   }
 
   return response;
