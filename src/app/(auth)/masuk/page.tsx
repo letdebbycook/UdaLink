@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
+import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
+
 function MasukForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -18,12 +20,18 @@ function MasukForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  React.useEffect(() => {
+    if (searchParams.get("error") === "oauth_failed") {
+      toast.error("Gagal masuk dengan akun Google. Silakan coba lagi.");
+    }
+  }, [searchParams]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: signInData, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -35,6 +43,22 @@ function MasukForm() {
           toast.error(`Gagal masuk: ${error.message}`);
         }
         return;
+      }
+
+      // Role admin langsung diarahkan ke panel admin saja
+      if (signInData?.user) {
+        const { data: membership } = await supabase
+          .from("memberships")
+          .select("role")
+          .eq("user_id", signInData.user.id)
+          .single();
+
+        if (membership?.role === "admin") {
+          toast.success("Selamat datang Admin! Mengarahkan ke panel admin...");
+          router.push("/admin");
+          router.refresh();
+          return;
+        }
       }
 
       toast.success("Berhasil masuk! Mengarahkan...");
@@ -57,6 +81,18 @@ function MasukForm() {
         <p className="text-xs text-[#64748B]">
           Masuk ke akun UdaLink untuk mengelola etalase affiliate-mu.
         </p>
+      </div>
+
+      {/* Tombol Masuk dengan Google & Konfirmasi */}
+      <div className="space-y-3">
+        <GoogleAuthButton mode="masuk" redirectPath={redirectTarget} />
+        
+        <div className="relative flex items-center justify-center pt-1">
+          <div className="border-t border-[#E2E8F0] w-full" />
+          <span className="bg-white px-3 text-[11px] font-medium text-slate-400 uppercase tracking-wider relative shrink-0">
+            atau dengan email
+          </span>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">

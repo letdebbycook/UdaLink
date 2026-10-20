@@ -57,14 +57,142 @@ export default function StatistikPage() {
   const topProduct = productsStats.length > 0 ? productsStats[0] : null;
   const avgDaily = Math.round((totalClicks / days) * 10) / 10;
 
+  // Jika bukan PRO, kunci seluruh menu statistik dengan layar promosi PRO
+  if (!loading && !isPro) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight text-[#0F172A]">
+              Statistik Klik Etalase
+            </h1>
+            <Badge className="bg-amber-100 text-amber-800 border-amber-300 text-xs font-semibold">
+              Fitur Eksklusif PRO
+            </Badge>
+          </div>
+          <p className="text-sm text-[#64748B] mt-1">
+            Pantau seberapa sering produkmu dikunjungi dan diklik oleh calon pembeli.
+          </p>
+        </div>
+
+        {/* PRO LOCK HERO PAYWALL */}
+        <div className="relative rounded-3xl border border-amber-200/80 bg-gradient-to-b from-amber-50/50 via-white to-emerald-50/30 p-8 sm:p-12 overflow-hidden shadow-sm text-center">
+          {/* Subtle background icons decoration */}
+          <div className="absolute top-4 right-6 opacity-10 pointer-events-none">
+            <BarChart2 className="w-48 h-48 text-amber-600" />
+          </div>
+
+          <div className="max-w-xl mx-auto relative z-10 space-y-6">
+            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-400/40 text-amber-600 flex items-center justify-center mx-auto shadow-inner">
+              <Lock className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-2">
+              <h2 className="text-xl sm:text-2xl font-extrabold text-[#0F172A] tracking-tight">
+                Menu Statistik Terkunci
+              </h2>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Menu analisis klik produk dan performa pengunjung hanya dapat dibuka setelah akun Anda di-upgrade ke <strong>UdaLink PRO</strong>.
+              </p>
+            </div>
+
+            {/* Benefit Bullets */}
+            <div className="bg-white/80 backdrop-blur-xs rounded-2xl p-5 border border-slate-200/80 text-left shadow-2xs space-y-3">
+              <p className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                Yang akan Anda dapatkan di PRO:
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-slate-700">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                    ✓
+                  </div>
+                  <span>Total klik etalase real-time</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                    ✓
+                  </div>
+                  <span>Peringkat produk terlaris</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                    ✓
+                  </div>
+                  <span>Rentang riwayat 30 hari</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                    ✓
+                  </div>
+                  <span>Pelacakan per marketplace</span>
+                </div>
+              </div>
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link href="/dashboard/langganan" className="w-full sm:w-auto">
+                <Button className="w-full sm:w-auto bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-sm px-6 h-11 gap-2 shadow-md shadow-emerald-600/20">
+                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  <span>Buka Menu Statistik — Upgrade PRO</span>
+                </Button>
+              </Link>
+              <Link href="/dashboard" className="w-full sm:w-auto">
+                <Button variant="outline" className="w-full sm:w-auto h-11 text-xs font-semibold px-4">
+                  Kembali ke Ringkasan
+                </Button>
+              </Link>
+            </div>
+
+            <p className="text-[11px] text-slate-400">
+              Tersedia paket bulanan (Rp 29.000) dan tahunan hemat 28% (Rp 249.000).
+            </p>
+          </div>
+        </div>
+
+        {/* Blurred Teaser Preview */}
+        <div className="relative opacity-40 select-none pointer-events-none filter blur-[2px] transition-all">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Card className="border-[#E2E8F0] bg-white">
+              <CardContent className="p-5">
+                <span className="text-xs font-semibold text-slate-500">Total Klik Produk</span>
+                <div className="text-3xl font-bold text-[#0F172A] mt-2">1.420</div>
+                <p className="text-[11px] text-slate-400 mt-1">Dalam rentang 30 hari</p>
+              </CardContent>
+            </Card>
+            <Card className="border-[#E2E8F0] bg-white">
+              <CardContent className="p-5">
+                <span className="text-xs font-semibold text-slate-500">Rata-rata Klik / Hari</span>
+                <div className="text-3xl font-bold text-[#0F172A] mt-2">47,3</div>
+                <p className="text-[11px] text-slate-400 mt-1">Klik per hari</p>
+              </CardContent>
+            </Card>
+            <Card className="border-[#E2E8F0] bg-white">
+              <CardContent className="p-5">
+                <span className="text-xs font-semibold text-slate-500">Produk Terpopuler</span>
+                <div className="text-lg font-bold text-[#0F172A] mt-2 truncate">Kemeja Linen Pria</div>
+                <p className="text-[11px] text-slate-400 mt-1">340 klik total</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header & Filter Rentang Hari */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#0F172A]">
-            Statistik Klik Etalase
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight text-[#0F172A]">
+              Statistik Klik Etalase
+            </h1>
+            <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 text-xs font-semibold">
+              PRO Aktif
+            </Badge>
+          </div>
           <p className="text-sm text-[#64748B] mt-1">
             Pantau seberapa sering produkmu dikunjungi dan diklik oleh calon pembeli.
           </p>
@@ -91,38 +219,9 @@ export default function StatistikPage() {
             }`}
           >
             30 Hari Terakhir
-            {!isPro && <Lock className="w-3 h-3 text-amber-500" />}
           </button>
         </div>
       </div>
-
-      {/* PRO Upgrade Notice if user is Gratis */}
-      {!isPro && (
-        <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-amber-900">
-                Buka Riwayat 30 Hari & Analisis Mendalam dengan PRO
-              </p>
-              <p className="text-[11px] text-amber-700 mt-0.5">
-                Paket Gratis dibatasi analitik 7 hari. Upgrade untuk melihat tren penjualan bulanan.
-              </p>
-            </div>
-          </div>
-          <Link href="/dashboard/langganan">
-            <Button
-              size="sm"
-              className="bg-amber-600 hover:bg-amber-700 text-white gap-1.5 text-xs shrink-0"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Upgrade PRO
-            </Button>
-          </Link>
-        </div>
-      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

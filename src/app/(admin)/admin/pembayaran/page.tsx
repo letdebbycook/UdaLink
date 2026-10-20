@@ -311,8 +311,13 @@ export default function AdminPembayaranPage() {
                   <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-100">
                     <div>
                       <span className="text-[10px] text-slate-400 block">Nominal Transfer</span>
-                      <span className="font-bold text-sm text-[#0F172A]">
+                      <span className="font-bold text-sm text-[#0F172A] block">
                         {formatRupiah(p.amount)}
+                      </span>
+                      <span className="text-[10px] font-semibold text-emerald-700">
+                        {p.duration_days >= 300 || p.amount >= 200000
+                          ? "Tahunan (365 Hari)"
+                          : "Bulanan (30 Hari)"}
                       </span>
                     </div>
                     <div>
@@ -357,7 +362,7 @@ export default function AdminPembayaranPage() {
                     <th className="py-3 px-4 font-semibold">Tanggal</th>
                     <th className="py-3 px-4 font-semibold">Pengguna</th>
                     <th className="py-3 px-4 font-semibold">Pengirim</th>
-                    <th className="py-3 px-4 font-semibold">Nominal</th>
+                    <th className="py-3 px-4 font-semibold">Paket & Nominal</th>
                     <th className="py-3 px-4 font-semibold">Status</th>
                     <th className="py-3 px-4 font-semibold text-right">Aksi</th>
                   </tr>
@@ -376,8 +381,19 @@ export default function AdminPembayaranPage() {
                         <div className="font-medium">{p.sender_name}</div>
                         <div className="text-[11px] text-[#64748B]">{p.sender_bank}</div>
                       </td>
-                      <td className="py-3.5 px-4 font-bold text-[#0F172A]">
-                        {formatRupiah(p.amount)}
+                      <td className="py-3.5 px-4 text-[#0F172A]">
+                        <div className="font-bold">{formatRupiah(p.amount)}</div>
+                        <div className="mt-0.5">
+                          {p.duration_days >= 300 || p.amount >= 200000 ? (
+                            <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded">
+                              Tahunan (365 Hari)
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                              Bulanan (30 Hari)
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3.5 px-4">
                         {p.status === "pending" && (

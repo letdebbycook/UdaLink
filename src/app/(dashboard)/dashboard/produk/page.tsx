@@ -49,6 +49,9 @@ export default function ProdukPage() {
   const [formImageUrl, setFormImageUrl] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [rawSelectedFile, setRawSelectedFile] = useState<File | null>(null);
+  const [imageFitMode, setImageFitMode] = useState<"contain" | "cover">("contain");
+  const [imageZoom, setImageZoom] = useState<number>(1.0);
   const [uploadProgress, setUploadProgress] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -113,6 +116,32 @@ export default function ProdukPage() {
     setFormMarketplace(detected);
   }
 
+  // Helper untuk proses gambar 1:1 ideal tanpa terpotong
+  async function processSelectedImage(
+    file: File,
+    fit: "contain" | "cover",
+    zoom: number
+  ) {
+    try {
+      setUploadProgress(true);
+      const { file: compressed, dataUrl } = await compressImage(file, {
+        makeSquare: true,
+        fitMode: fit,
+        zoomScale: zoom,
+        maxWidth: 1080,
+        maxHeight: 1080,
+        quality: 0.85,
+        backgroundColor: "#FFFFFF",
+      });
+      setImageFile(compressed);
+      setImagePreview(dataUrl);
+    } catch (err) {
+      toast.error("Gagal memproses gambar produk");
+    } finally {
+      setUploadProgress(false);
+    }
+  }
+
   // Handle image pick & compression
   async function handleImagePick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -123,15 +152,22 @@ export default function ProdukPage() {
       return;
     }
 
-    try {
-      setUploadProgress(true);
-      const { file: compressed, dataUrl } = await compressImage(file, 1080, 1080, 0.8);
-      setImageFile(compressed);
-      setImagePreview(dataUrl);
-    } catch (err) {
-      toast.error("Gagal memproses gambar produk");
-    } finally {
-      setUploadProgress(false);
+    setRawSelectedFile(file);
+    await processSelectedImage(file, imageFitMode, imageZoom);
+  }
+
+  function handleFitModeChange(mode: "contain" | "cover") {
+    setImageFitMode(mode);
+    if (rawSelectedFile) {
+      processSelectedImage(rawSelectedFile, mode, imageZoom);
+    }
+  }
+
+  function handleZoomChange(newZoom: number) {
+    const clamped = Math.max(0.6, Math.min(1.4, Math.round(newZoom * 10) / 10));
+    setImageZoom(clamped);
+    if (rawSelectedFile) {
+      processSelectedImage(rawSelectedFile, imageFitMode, clamped);
     }
   }
 
@@ -151,6 +187,9 @@ export default function ProdukPage() {
     setFormImageUrl(null);
     setImageFile(null);
     setImagePreview(null);
+    setRawSelectedFile(null);
+    setImageFitMode("contain");
+    setImageZoom(1.0);
     setIsModalOpen(true);
   }
 
@@ -166,6 +205,9 @@ export default function ProdukPage() {
     setFormImageUrl(prod.image_url);
     setImageFile(null);
     setImagePreview(prod.image_url);
+    setRawSelectedFile(null);
+    setImageFitMode("contain");
+    setImageZoom(1.0);
     setIsModalOpen(true);
   }
 
@@ -682,42 +724,109 @@ export default function ProdukPage() {
             </div>
 
             <form onSubmit={handleSaveProduct} className="space-y-4 pt-4">
-              {/* Foto Produk */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Foto Produk (Otomatis Kompresi WebP &lt; 300KB)
+              {/* Foto Produk dengan Kontrol Ideal 1:1 */}
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-slate-700">
+                  Foto Produk (Rasio Ideal 1:1 Toko)
                 </label>
-                <div className="flex items-center gap-4">
-                  <div className="w-20 h-20 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden relative flex items-center justify-center shrink-0">
-                    {imagePreview ? (
-                      <img
-                        src={imagePreview}
-                        alt="Preview"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <Package className="w-8 h-8 text-slate-400" />
-                    )}
+                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                  <div className="flex items-center gap-4">
+                    <div className="w-24 h-24 rounded-2xl bg-white border border-slate-200 overflow-hidden relative flex items-center justify-center shrink-0 shadow-2xs">
+                      {imagePreview ? (
+                        <img
+                          src={imagePreview}
+                          alt="Preview 1:1"
+                          className="w-full h-full object-contain"
+                        />
+                      ) : (
+                        <Package className="w-8 h-8 text-slate-300" />
+                      )}
+                      <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] font-mono px-1 rounded">
+                        1:1
+                      </span>
+                    </div>
+
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="file"
+                          id="product-photo"
+                          accept="image/*"
+                          onChange={handleImagePick}
+                          className="hidden"
+                        />
+                        <label
+                          htmlFor="product-photo"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer shadow-2xs"
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>{uploadProgress ? "Memproses..." : "Pilih / Ganti Foto"}</span>
+                        </label>
+                      </div>
+                      <p className="text-[11px] text-slate-500 leading-tight">
+                        Format 1:1 kotak mencegah foto terpotong di tampilan etalase HP.
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <input
-                      type="file"
-                      id="product-photo"
-                      accept="image/*"
-                      onChange={handleImagePick}
-                      className="hidden"
-                    />
-                    <label
-                      htmlFor="product-photo"
-                      className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-                    >
-                      <Upload className="w-4 h-4" />
-                      {uploadProgress ? "Mengompresi..." : "Pilih Foto"}
-                    </label>
-                    <p className="text-[11px] text-slate-500 mt-1">
-                      Maks. 5 MB. Otomatis dikompres & dipotong optimal untuk HP.
-                    </p>
-                  </div>
+
+                  {/* Kontrol Kustomisasi 1:1 (Pas Utuh vs Penuh & Ukuran Zoom) */}
+                  {imagePreview && (
+                    <div className="pt-2 border-t border-slate-200/80 space-y-2 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-slate-700">Format Gambar:</span>
+                        <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200">
+                          <button
+                            type="button"
+                            onClick={() => handleFitModeChange("contain")}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                              imageFitMode === "contain"
+                                ? "bg-[#16A34A] text-white shadow-2xs"
+                                : "text-slate-600 hover:text-slate-900"
+                            }`}
+                          >
+                            Pas Utuh (1:1 Ideal)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleFitModeChange("cover")}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                              imageFitMode === "cover"
+                                ? "bg-[#16A34A] text-white shadow-2xs"
+                                : "text-slate-600 hover:text-slate-900"
+                            }`}
+                          >
+                            Penuh (Cover)
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Slider / Tombol Zoom Kustom Ukuran */}
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="font-semibold text-slate-700">Besar Gambar:</span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleZoomChange(imageZoom - 0.1)}
+                            className="w-6 h-6 rounded-md bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 flex items-center justify-center font-bold text-xs"
+                            title="Kecilkan"
+                          >
+                            -
+                          </button>
+                          <span className="font-mono text-[11px] font-bold text-slate-700 w-12 text-center">
+                            {Math.round(imageZoom * 100)}%
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleZoomChange(imageZoom + 0.1)}
+                            className="w-6 h-6 rounded-md bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 flex items-center justify-center font-bold text-xs"
+                            title="Besarkan"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

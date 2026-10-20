@@ -111,13 +111,17 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
   return (
     <div
       className="min-h-screen py-0 sm:py-8 transition-colors duration-200"
-      style={{ backgroundColor: theme.bg }}
+      style={{
+        backgroundColor: theme.bg,
+        backgroundImage: theme.bgGradient,
+      }}
     >
       {/* Mobile-First Frame: max 480px in center */}
       <div
         className="max-w-[480px] mx-auto min-h-screen sm:min-h-[92vh] sm:rounded-3xl shadow-xl flex flex-col relative overflow-hidden transition-all border sm:border-opacity-100 border-opacity-0"
         style={{
           backgroundColor: theme.bg,
+          backgroundImage: theme.bgGradient,
           borderColor: theme.cardBorder,
         }}
       >
@@ -539,7 +543,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                           alt={prod.name}
                           fill
                           sizes="140px"
-                          className="object-cover"
+                          className="object-contain p-0.5"
                         />
                       ) : (
                         <div className="h-full w-full flex items-center justify-center text-slate-300">
@@ -565,7 +569,9 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                       href={`/go/${prod.id}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-1.5 w-full py-1.5 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 transition-all"
+                      className={`mt-1.5 w-full py-1.5 ${
+                        theme.buttonRadius || "rounded-lg"
+                      } text-[10px] font-bold flex items-center justify-center gap-1 transition-all`}
                       style={{
                         backgroundColor: theme.button,
                         color: theme.buttonText,
@@ -675,7 +681,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                             alt={prod.name}
                             fill
                             sizes="(max-width: 480px) 50vw, 240px"
-                            className="object-cover hover:scale-105 transition-transform duration-200"
+                            className="object-contain p-0.5 hover:scale-105 transition-transform duration-200"
                           />
                         ) : (
                           <div className="h-full w-full flex items-center justify-center text-slate-300">
@@ -709,7 +715,9 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                         href={`/go/${prod.id}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="w-full h-10 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-[0.98]"
+                        className={`w-full h-10 ${
+                          theme.buttonRadius || "rounded-xl"
+                        } text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-[0.98]`}
                         style={{
                           backgroundColor: theme.button,
                           color: theme.buttonText,

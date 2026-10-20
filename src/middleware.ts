@@ -38,12 +38,27 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // 1. Proteksi Halaman Dashboard (/dashboard/...)
+  // 1. Proteksi dan Redireksi Halaman Dashboard (/dashboard/...)
   if (pathname.startsWith("/dashboard")) {
     if (!user) {
       const redirectUrl = new URL("/masuk", request.url);
       redirectUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(redirectUrl);
+    }
+
+    // Role admin langsung diarahkan ke panel admin saja
+    const { data: membership } = await supabase
+      .from("memberships")
+      .select("role, is_suspended")
+      .eq("user_id", user.id)
+      .single();
+
+    if (membership?.is_suspended === true) {
+      return NextResponse.redirect(new URL("/akun-dinonaktifkan", request.url));
+    }
+
+    if (membership?.role === "admin") {
+      return NextResponse.redirect(new URL("/admin", request.url));
     }
   }
 
@@ -62,42 +77,48 @@ export async function middleware(request: NextRequest) {
       .eq("user_id", user.id)
       .single();
 
+    if (membership?.is_suspended === true) {
+      return NextResponse.redirect(new URL("/akun-dinonaktifkan", request.url));
+    }
+
     if (!membership || membership.role !== "admin") {
       // Jika bukan admin, lempar ke dashboard
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }
 
-  // 3. Jika sudah login, cegah buka halaman /masuk
-  if (user && pathname === "/masuk") {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
-
-  // 4. Cek akun dinonaktifkan (is_suspended) untuk user yang sudah login di rute terproteksi
-  const isProtectedRoute = pathname.startsWith("/dashboard") || pathname.startsWith("/admin");
-  const isSuspendedPage = pathname === "/akun-dinonaktifkan";
-
-  if (user && isProtectedRoute && !isSuspendedPage) {
+  // 3. Jika sudah login, cegah buka halaman /masuk atau /daftar
+  if (user && (pathname === "/masuk" || pathname === "/daftar")) {
     const { data: membership } = await supabase
       .from("memberships")
-      .select("is_suspended")
+      .select("role, is_suspended")
       .eq("user_id", user.id)
       .single();
 
     if (membership?.is_suspended === true) {
       return NextResponse.redirect(new URL("/akun-dinonaktifkan", request.url));
     }
+
+    if (membership?.role === "admin") {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // 5. Jika sudah login dan tidak suspended, cegah akses ke halaman dinonaktifkan
+  // 4. Cek akses ke halaman akun-dinonaktifkan
+  const isSuspendedPage = pathname === "/akun-dinonaktifkan";
   if (user && isSuspendedPage) {
     const { data: membership } = await supabase
       .from("memberships")
-      .select("is_suspended")
+      .select("role, is_suspended")
       .eq("user_id", user.id)
       .single();
 
     if (!membership?.is_suspended) {
+      if (membership?.role === "admin") {
+        return NextResponse.redirect(new URL("/admin", request.url));
+      }
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }

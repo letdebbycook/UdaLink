@@ -173,7 +173,12 @@ export default function DashboardLayout({
                 )}
               >
                 <Icon className={cn("h-4.5 w-4.5", isActive ? "text-[#16A34A]" : "text-[#64748B]")} />
-                <span>{item.name}</span>
+                <span className="flex-1">{item.name}</span>
+                {item.name === "Statistik" && !currentUser.isPro && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-300">
+                    PRO
+                  </span>
+                )}
               </Link>
             );
           })}

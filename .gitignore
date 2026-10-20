@@ -58,3 +58,14 @@ supabase/be-bugfix-patch.sql
 # unused default next.js assets
 public/*.svg
 
+# python cache & scratch files
+__pycache__/
+*.py[cod]
+scratch/
+scratch_*.py
+
+# presentations & logbook documentation
+*.pptx
+contoh ppt/
+contoh\ ppt/
+LAPORAN_PENGUJIAN_DAN_AUDIT_BUG.md

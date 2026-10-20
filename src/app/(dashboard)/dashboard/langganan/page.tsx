@@ -22,6 +22,7 @@ export default function LanggananPage() {
   const [submitting, setSubmitting] = useState(false);
 
   // Form Pembayaran
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("yearly");
   const [senderName, setSenderName] = useState("");
   const [senderBank, setSenderBank] = useState("BCA");
   const [proofFile, setProofFile] = useState<File | null>(null);
@@ -56,9 +57,13 @@ export default function LanggananPage() {
   }, [loadData]);
 
   // Hitung jumlah transfer dengan kode unik pembayaran
-  const basePrice = plan?.pro_price ?? 29000;
+  const monthlyPrice = plan?.pro_price ?? 29000;
+  const yearlyPrice = 249000; // Hemat 28% (Rp 99.000) dibanding 12 x 29.000 (348.000)
+  const isYearly = billingCycle === "yearly";
+  const activeBasePrice = isYearly ? yearlyPrice : monthlyPrice;
+  const activeDurationDays = isYearly ? 365 : (plan?.pro_duration_days ?? 30);
   const paymentCode = plan?.payment_code ?? 123;
-  const totalTransfer = basePrice + paymentCode;
+  const totalTransfer = activeBasePrice + paymentCode;
   const isPro = plan?.is_pro ?? false;
 
   // Cek apakah ada pembayaran yang sedang pending
@@ -117,13 +122,27 @@ export default function LanggananPage() {
       if (uploadErr) throw uploadErr;
 
       // 2. Submit payment via RPC submit_payment
-      const { data: payId, error: rpcErr } = await supabase.rpc("submit_payment", {
+      const planTag = isYearly ? "Paket Tahunan (365 Hari)" : "Paket Bulanan (30 Hari)";
+      const formattedSenderBank = `${senderBank.trim()} [${planTag}]`;
+
+      // Coba panggil RPC submit_payment dengan parameter p_plan_type
+      const { error: rpcErr } = await supabase.rpc("submit_payment", {
         p_sender_name: senderName.trim(),
-        p_sender_bank: senderBank.trim(),
+        p_sender_bank: formattedSenderBank,
         p_proof_path: filePath,
+        p_plan_type: billingCycle,
       });
 
-      if (rpcErr) throw new Error(rpcErr.message);
+      // Fallback jika database belum ada overload 4 parameter
+      if (rpcErr) {
+        const { error: fallbackErr } = await supabase.rpc("submit_payment", {
+          p_sender_name: senderName.trim(),
+          p_sender_bank: formattedSenderBank,
+          p_proof_path: filePath,
+        });
+
+        if (fallbackErr) throw new Error(fallbackErr.message);
+      }
 
       toast.success("Bukti transfer berhasil dikirim! Menunggu konfirmasi admin.");
       setSenderName("");
@@ -201,6 +220,38 @@ export default function LanggananPage() {
         </CardContent>
       </Card>
 
+      {/* Billing Cycle Switcher: Bulanan vs Tahunan */}
+      <div className="flex flex-col items-center justify-center space-y-2 pt-2">
+        <span className="text-xs font-semibold text-slate-500">Pilih Periode Berlangganan:</span>
+        <div className="inline-flex items-center p-1.5 bg-slate-100 rounded-2xl border border-slate-200">
+          <button
+            type="button"
+            onClick={() => setBillingCycle("monthly")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              !isYearly
+                ? "bg-white text-slate-900 shadow-2xs"
+                : "text-slate-500 hover:text-slate-900"
+            }`}
+          >
+            Bulanan (30 Hari)
+          </button>
+          <button
+            type="button"
+            onClick={() => setBillingCycle("yearly")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              isYearly
+                ? "bg-[#16A34A] text-white shadow-2xs"
+                : "text-slate-500 hover:text-slate-900"
+            }`}
+          >
+            <span>Tahunan (365 Hari)</span>
+            <span className="text-[10px] bg-amber-400 text-amber-950 px-1.5 py-0.5 rounded-md font-extrabold shadow-2xs">
+              HEMAT 28%
+            </span>
+          </button>
+        </div>
+      </div>
+
       {/* Perbandingan Fitur Paket */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Paket Gratis */}
@@ -222,11 +273,11 @@ export default function LanggananPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-[#16A34A] shrink-0" />
-                3 pilihan tema dasar
+                Pilihan tema dasar
               </div>
-              <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-[#16A34A] shrink-0" />
-                Analisis statistik klik 7 hari
+              <div className="flex items-center gap-2 text-slate-400">
+                <XCircle className="w-4 h-4 text-slate-300 shrink-0" />
+                Menu statistik terkunci
               </div>
               <div className="flex items-center gap-2 text-slate-400">
                 <XCircle className="w-4 h-4 text-slate-300 shrink-0" />
@@ -247,22 +298,35 @@ export default function LanggananPage() {
         {/* Paket PRO */}
         <Card className="border-[#16A34A] ring-2 ring-[#16A34A]/20 bg-emerald-50/20 relative overflow-hidden">
           <div className="absolute top-0 right-0 bg-[#16A34A] text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl tracking-wider">
-            REKOMENDASI
+            {isYearly ? "PALING HEMAT" : "REKOMENDASI"}
           </div>
 
           <CardContent className="p-6 space-y-4">
             <div>
               <span className="text-xs font-bold text-[#16A34A] uppercase tracking-wider">
-                Affiliator Pro
+                Affiliator Pro {isYearly && "• Paket 1 Tahun"}
               </span>
               <h3 className="text-xl font-bold text-[#0F172A] mt-1">Paket UdaLink PRO</h3>
-              <div className="text-2xl font-bold text-[#16A34A] mt-2">
-                {formatRupiah(basePrice)}{" "}
-                <span className="text-xs font-normal text-slate-500">
-                  / {plan?.pro_duration_days ?? 30} hari
-                </span>
+              
+              <div className="mt-2">
+                <div className="text-2xl font-bold text-[#16A34A]">
+                  {formatRupiah(activeBasePrice)}{" "}
+                  <span className="text-xs font-normal text-slate-500">
+                    / {activeDurationDays} hari
+                  </span>
+                </div>
+                {isYearly ? (
+                  <p className="text-[11px] text-emerald-700 font-semibold mt-0.5">
+                    Setara ~Rp 20.750/bulan. <strong>Hemat Rp 99.000</strong> dibanding bayar bulanan!
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Rp 29.000 per 30 hari. Bebas perpanjang kapan saja.
+                  </p>
+                )}
               </div>
-              <p className="text-xs text-slate-600 mt-1">
+
+              <p className="text-xs text-slate-600 mt-2">
                 Semua fitur terbuka untuk memaksimalkan penjualan affiliate.
               </p>
             </div>

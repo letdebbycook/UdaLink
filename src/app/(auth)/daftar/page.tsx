@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
+import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
+
 export default function DaftarPage() {
   const router = useRouter();
   const [username, setUsername] = useState("");
@@ -17,7 +19,7 @@ export default function DaftarPage() {
   const [loading, setLoading] = useState(false);
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
-  const [activeUser, setActiveUser] = useState<{ email?: string; username?: string } | null>(null);
+  const [activeUser, setActiveUser] = useState<{ email?: string; username?: string; isAdmin?: boolean } | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
 
   // Periksa apakah user masih memiliki sesi login aktif
@@ -26,15 +28,23 @@ export default function DaftarPage() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("username")
-            .eq("id", user.id)
-            .single();
+          const [{ data: profile }, { data: member }] = await Promise.all([
+            supabase
+              .from("profiles")
+              .select("username")
+              .eq("id", user.id)
+              .single(),
+            supabase
+              .from("memberships")
+              .select("role")
+              .eq("user_id", user.id)
+              .single(),
+          ]);
 
           setActiveUser({
             email: user.email,
             username: profile?.username || user.email?.split("@")[0] || "user",
+            isAdmin: member?.role === "admin",
           });
         }
       } catch (err) {
@@ -158,12 +168,21 @@ export default function DaftarPage() {
             </p>
           </div>
           <div className="pt-2 space-y-2.5">
-            <Link href="/dashboard" className="w-full block">
-              <Button className="w-full bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-semibold gap-1.5 h-10">
-                <span>Buka Dashboard @{activeUser.username}</span>
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Button>
-            </Link>
+            {activeUser.isAdmin ? (
+              <Link href="/admin" className="w-full block">
+                <Button className="w-full bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-semibold gap-1.5 h-10">
+                  <span>Buka Panel Admin</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/dashboard" className="w-full block">
+                <Button className="w-full bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-semibold gap-1.5 h-10">
+                  <span>Buka Dashboard @{activeUser.username}</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </Link>
+            )}
             <Button
               type="button"
               variant="outline"
@@ -183,6 +202,18 @@ export default function DaftarPage() {
         </div>
       ) : (
         <>
+          {/* Tombol Daftar dengan Google & Konfirmasi */}
+          <div className="space-y-3">
+            <GoogleAuthButton mode="daftar" redirectPath="/dashboard" />
+            
+            <div className="relative flex items-center justify-center pt-1">
+              <div className="border-t border-[#E2E8F0] w-full" />
+              <span className="bg-white px-3 text-[11px] font-medium text-slate-400 uppercase tracking-wider relative shrink-0">
+                atau buat akun baru
+              </span>
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Username */}
             <div className="space-y-1.5">

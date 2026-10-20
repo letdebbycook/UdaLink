@@ -11,7 +11,8 @@
 CREATE OR REPLACE FUNCTION public.submit_payment(
     p_sender_name TEXT,
     p_sender_bank TEXT,
-    p_proof_path TEXT
+    p_proof_path TEXT,
+    p_plan_type TEXT DEFAULT 'monthly'
 )
 RETURNS UUID
 LANGUAGE plpgsql
@@ -23,6 +24,7 @@ DECLARE
     v_membership RECORD;
     v_settings RECORD;
     v_amount INTEGER;
+    v_duration INTEGER;
     v_new_payment_id UUID;
     v_has_pending BOOLEAN;
 BEGIN
@@ -59,7 +61,13 @@ BEGIN
         RAISE EXCEPTION 'Pengaturan sistem atau kode pembayaran tidak ditemukan';
     END IF;
 
-    v_amount := v_settings.pro_price + v_membership.payment_code;
+    IF lower(trim(COALESCE(p_plan_type, 'monthly'))) = 'yearly' THEN
+        v_amount := 249000 + v_membership.payment_code;
+        v_duration := 365;
+    ELSE
+        v_amount := v_settings.pro_price + v_membership.payment_code;
+        v_duration := v_settings.pro_duration_days;
+    END IF;
 
     -- Insert ke payments
     INSERT INTO public.payments (
@@ -73,7 +81,7 @@ BEGIN
     ) VALUES (
         v_user_id,
         v_amount,
-        v_settings.pro_duration_days,
+        v_duration,
         trim(p_sender_name),
         trim(p_sender_bank),
         trim(p_proof_path),
@@ -85,6 +93,7 @@ BEGIN
 END;
 $$;
 
+GRANT EXECUTE ON FUNCTION public.submit_payment(TEXT, TEXT, TEXT, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.submit_payment(TEXT, TEXT, TEXT) TO authenticated;
 
 

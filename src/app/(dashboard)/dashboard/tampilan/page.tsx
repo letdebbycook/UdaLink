@@ -54,6 +54,7 @@ export default function TampilanPage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [selectedTheme, setSelectedTheme] = useState("hijau");
+  const [themeCategoryFilter, setThemeCategoryFilter] = useState<string>("all");
 
   // Form Sosial State
   const [whatsapp, setWhatsapp] = useState("");
@@ -517,70 +518,114 @@ export default function TampilanPage() {
           {activeTab === "tema" && (
             <Card className="border-[#E2E8F0] bg-white">
               <CardContent className="p-6 space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
-                    <h3 className="text-sm font-semibold text-[#0F172A]">Pilih Tema Warna</h3>
+                    <h3 className="text-sm font-semibold text-[#0F172A]">Pilih Tema & Gaya Visual</h3>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      3 tema gratis dan 5 tema premium berdesain modern untuk memikat pembeli.
+                      16 pilihan tema eksklusif dengan palet warna harmonis, gradasi latar, dan bentuk tombol unik.
                     </p>
                   </div>
                   {!isPro && (
-                    <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-300 text-xs">
-                      5 Tema Khusus PRO
+                    <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-300 text-xs self-start sm:self-auto">
+                      12 Tema Khusus PRO
                     </Badge>
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-                  {Object.values(THEMES).map((th) => {
-                    const isSelected = selectedTheme === th.id;
-                    const isLocked = th.isPremium && !isPro;
+                {/* Filter Kategori Tema */}
+                <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
+                  {[
+                    { id: "all", label: "Semua (16)" },
+                    { id: "Dasar", label: "Dasar (4)" },
+                    { id: "Pastel", label: "Pastel" },
+                    { id: "Dark / Cyber", label: "Dark & Cyber" },
+                    { id: "Luxury", label: "Luxury" },
+                    { id: "Earthy", label: "Earthy" },
+                    { id: "Vibrant", label: "Vibrant" },
+                  ].map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setThemeCategoryFilter(cat.id)}
+                      className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition-colors ${
+                        themeCategoryFilter === cat.id
+                          ? "bg-[#16A34A] text-white shadow-2xs"
+                          : "bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70"
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
 
-                    return (
-                      <div
-                        key={th.id}
-                        onClick={() => {
-                          if (isLocked) {
-                            toast.error(`Tema "${th.name}" khusus untuk akun PRO.`);
-                            return;
-                          }
-                          setSelectedTheme(th.id);
-                        }}
-                        className={`relative rounded-xl p-3 border-2 cursor-pointer transition-all ${
-                          isSelected
-                            ? "border-[#16A34A] ring-2 ring-[#16A34A]/20 shadow-xs"
-                            : "border-slate-200 hover:border-slate-300"
-                        } ${isLocked ? "opacity-60 bg-slate-50" : "bg-white"}`}
-                      >
-                        {/* Color swatch */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+                  {Object.values(THEMES)
+                    .filter((th) =>
+                      themeCategoryFilter === "all"
+                        ? true
+                        : th.categoryTag === themeCategoryFilter
+                    )
+                    .map((th) => {
+                      const isSelected = selectedTheme === th.id;
+                      const isLocked = th.isPremium && !isPro;
+
+                      return (
                         <div
-                          className="h-14 rounded-lg flex items-center justify-center p-2 mb-2 relative overflow-hidden"
-                          style={{ backgroundColor: th.bg }}
+                          key={th.id}
+                          onClick={() => {
+                            if (isLocked) {
+                              toast.error(`Tema "${th.name}" khusus untuk akun PRO.`);
+                              return;
+                            }
+                            setSelectedTheme(th.id);
+                          }}
+                          className={`relative rounded-xl p-3 border-2 cursor-pointer transition-all ${
+                            isSelected
+                              ? "border-[#16A34A] ring-2 ring-[#16A34A]/20 shadow-xs"
+                              : "border-slate-200 hover:border-slate-300"
+                          } ${isLocked ? "opacity-60 bg-slate-50" : "bg-white"}`}
                         >
+                          {/* Color swatch dengan preview bentuk tombol */}
                           <div
-                            className="w-10 h-6 rounded-md shadow-xs flex items-center justify-center"
-                            style={{ backgroundColor: th.button, color: th.buttonText }}
+                            className="h-16 rounded-lg flex items-center justify-center p-2 mb-2 relative overflow-hidden border border-black/5"
+                            style={{
+                              backgroundColor: th.bg,
+                              backgroundImage: th.bgGradient,
+                            }}
                           >
-                            <span className="text-[9px] font-bold">Aa</span>
-                          </div>
-                          {isSelected && (
-                            <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#16A34A] text-white flex items-center justify-center">
-                              <Check className="w-2.5 h-2.5" />
+                            <div
+                              className={`w-12 h-6 shadow-2xs flex items-center justify-center text-[10px] font-bold ${
+                                th.buttonRadius || "rounded-lg"
+                              }`}
+                              style={{ backgroundColor: th.button, color: th.buttonText }}
+                            >
+                              <span>Aa</span>
                             </div>
-                          )}
-                        </div>
 
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-slate-800 truncate">
-                            {th.name}
-                          </span>
-                          {th.isPremium && !isPro && (
-                            <Lock className="w-3 h-3 text-amber-500 shrink-0" />
-                          )}
+                            {isSelected && (
+                              <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#16A34A] text-white flex items-center justify-center shadow-xs">
+                                <Check className="w-2.5 h-2.5" />
+                              </div>
+                            )}
+
+                            {th.isPremium && (
+                              <span className="absolute bottom-1 left-1.5 text-[8px] font-bold tracking-wider uppercase px-1 py-0.2 rounded bg-black/40 text-white backdrop-blur-2xs">
+                                PRO
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-slate-800 truncate">
+                              {th.name}
+                            </span>
+                            {th.isPremium && !isPro && (
+                              <Lock className="w-3 h-3 text-amber-500 shrink-0" />
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                 </div>
               </CardContent>
             </Card>
@@ -888,7 +933,10 @@ export default function TampilanPage() {
             {/* Phone Screen */}
             <div
               className="rounded-[32px] overflow-hidden min-h-[580px] max-h-[620px] overflow-y-auto flex flex-col transition-colors duration-300 relative"
-              style={{ backgroundColor: currentTheme.bg }}
+              style={{
+                backgroundColor: currentTheme.bg,
+                backgroundImage: currentTheme.bgGradient,
+              }}
             >
               {/* Notch */}
               <div className="h-5 w-28 bg-slate-900 rounded-b-xl mx-auto mb-3" />
@@ -983,7 +1031,9 @@ export default function TampilanPage() {
                         Produk Pilihan #{i + 1}
                       </div>
                       <div
-                        className="text-[10px] font-bold py-1 px-2 rounded text-center"
+                        className={`text-[10px] font-bold py-1.5 px-2 text-center transition-all ${
+                          currentTheme.buttonRadius || "rounded-lg"
+                        }`}
                         style={{
                           backgroundColor: currentTheme.button,
                           color: currentTheme.buttonText,
