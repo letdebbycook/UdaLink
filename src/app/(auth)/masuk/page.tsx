@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, Suspense, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { GoogleIcon } from "@/components/ui/google-icon";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -17,6 +18,36 @@ function MasukForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Tampilkan pesan error dari callback OAuth Google
+  useEffect(() => {
+    const oauthError = searchParams.get("error");
+    if (oauthError) {
+      toast.error(oauthError);
+      router.replace("/masuk");
+    }
+  }, [searchParams, router]);
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    try {
+      // Flow PKCE + Sesi Cookie: sesi disimpan sebagai cookie httpOnly
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) {
+        toast.error(`Gagal masuk dengan Google: ${error.message}`);
+        setGoogleLoading(false);
+      }
+    } catch {
+      toast.error("Terjadi kesalahan saat menghubungi Google.");
+      setGoogleLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +69,17 @@ function MasukForm() {
       }
 
       toast.success("Berhasil masuk! Mengarahkan...");
-      router.push(redirectTarget);
+      // Admin diarahkan ke panel admin, pengguna lain ke tujuan semula
+      const { data: membership } = await supabase
+        .from("memberships")
+        .select("role")
+        .eq("user_id", (await supabase.auth.getUser()).data.user!.id)
+        .single();
+      if (membership?.role === "admin" && !redirectTarget.startsWith("/admin")) {
+        router.push("/admin");
+      } else {
+        router.push(redirectTarget);
+      }
       router.refresh();
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : "Terjadi kesalahan";
@@ -57,6 +98,30 @@ function MasukForm() {
         <p className="text-xs text-[#64748B]">
           Masuk ke akun UdaLink untuk mengelola etalase affiliate-mu.
         </p>
+      </div>
+
+      <Button
+        type="button"
+        variant="outline"
+        onClick={handleGoogleSignIn}
+        disabled={googleLoading || loading}
+        className="w-full h-11 text-sm font-semibold gap-2.5"
+      >
+        {googleLoading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <GoogleIcon className="h-4 w-4" />
+        )}
+        <span>Lanjutkan dengan Google</span>
+      </Button>
+
+      <div className="relative py-1">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t border-[#E2E8F0]" />
+        </div>
+        <div className="relative flex justify-center">
+          <span className="bg-white px-3 text-[11px] text-[#94A3B8]">atau gunakan email</span>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">

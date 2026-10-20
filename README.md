@@ -58,6 +58,22 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-or-publishable-key
    * Buka **Authentication** -> **Providers** -> **Email**.
    * Nonaktifkan toggle **Confirm email** agar user baru bisa langsung login saat testing lokal.
 
+### Sign in with Google (Opsional)
+
+Login Google memakai flow OAuth PKCE bawaan Supabase. Callback berada di `/auth/callback` dan sudah termasuk validasi bahwa email akun Google terverifikasi.
+
+1. Di Google Cloud Console ([console.cloud.google.com](https://console.cloud.google.com)), buat kredensial **OAuth client ID** tipe *Web application*:
+   - **Authorized JavaScript origins:** `http://localhost:3000` dan domain produksi Anda.
+   - **Authorized redirect URIs:** `https://<project-ref>.supabase.co/auth/v1/callback` (lihat nilai persisnya di Supabase Dashboard → Authentication → Providers → Google).
+2. Di Supabase Dashboard (**Authentication → Providers → Google**), aktifkan provider dan tempel **Client ID** serta **Client Secret**.
+3. Pastikan **Redirect URLs** di **Authentication → URL Configuration** memuat `http://localhost:3000/**` dan domain produksi Anda.
+4. Tidak ada environment variable tambahan; konfigurasi Google sepenuhnya di sisi Supabase.
+
+Fitur terkait role & langganan:
+
+- Pengguna dengan `memberships.role = 'admin'` otomatis diarahkan ke panel admin setelah login.
+- Menu dan halaman **Statistik** hanya tersedia untuk pengguna Pro (`pro_until` aktif). Pengguna Free yang membuka `/dashboard/statistik` langsung dialihkan ke halaman Langganan oleh pemeriksaan di sisi server (`src/proxy.ts` dan gate di `src/app/(dashboard)/dashboard/statistik/page.tsx`).
+
 ---
 
 ## Konfigurasi Akun Admin
