@@ -230,7 +230,7 @@ export default function DaftarPage() {
               <span className="w-full border-t border-[#E2E8F0]" />
             </div>
             <div className="relative flex justify-center">
-              <span className="bg-white px-3 text-[11px] text-[#94A3B8]">atau daftar pakai email</span>
+              <span className="bg-white px-3 text-[11px] text-[#64748B]">atau daftar pakai email</span>
             </div>
           </div>
 
