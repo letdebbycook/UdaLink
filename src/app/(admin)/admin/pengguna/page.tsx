@@ -74,7 +74,7 @@ export default function AdminPenggunaPage() {
     fetchUsers(search);
   };
 
-  // Client-side filtering
+
   const filteredUsers = users.filter((u) => {
     if (statusFilter === "pro") return u.is_pro && !u.is_suspended;
     if (statusFilter === "free") return !u.is_pro && !u.is_suspended && u.role !== "admin";
@@ -83,7 +83,7 @@ export default function AdminPenggunaPage() {
     return true;
   });
 
-  // Client-side pagination
+
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
   const paginatedUsers = filteredUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
@@ -149,7 +149,7 @@ export default function AdminPenggunaPage() {
           </p>
         </div>
 
-        {/* Form Pencarian */}
+
         <form onSubmit={handleSearchSubmit} className="flex gap-2 max-w-sm w-full">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94A3B8]" />
@@ -167,7 +167,7 @@ export default function AdminPenggunaPage() {
         </form>
       </div>
 
-      {/* Filter Status Pills */}
+
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
         {[
           { id: "all", label: `Semua (${users.length})` },
@@ -209,7 +209,7 @@ export default function AdminPenggunaPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {/* Mobile Card View (md:hidden) */}
+
           <div className="md:hidden space-y-3">
             {paginatedUsers.map((u) => {
               const isBusy = actionLoading === u.id;
@@ -312,7 +312,7 @@ export default function AdminPenggunaPage() {
             })}
           </div>
 
-          {/* Desktop Table View (hidden md:block) */}
+
           <div className="hidden md:block bg-white rounded-xl border border-[#E2E8F0] overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
@@ -377,14 +377,14 @@ export default function AdminPenggunaPage() {
 
                         <td className="py-3.5 px-4 text-right">
                           <div className="flex items-center justify-end gap-1.5">
-                            {/* Tombol Lihat Etalase */}
+
                             <Link href={`/${u.username}`} target="_blank">
                               <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Buka Etalase">
                                 <ExternalLink className="h-3.5 w-3.5 text-[#64748B]" />
                               </Button>
                             </Link>
 
-                            {/* Tombol Beri / Cabut Pro */}
+
                             {u.is_pro ? (
                               <Button
                                 size="sm"
@@ -407,7 +407,7 @@ export default function AdminPenggunaPage() {
                               </Button>
                             )}
 
-                            {/* Tombol Suspend / Unsuspend */}
+
                             <Button
                               size="sm"
                               variant="ghost"
@@ -431,7 +431,7 @@ export default function AdminPenggunaPage() {
             </div>
           </div>
 
-          {/* Pagination Controls */}
+
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs text-slate-600 bg-white p-4 rounded-xl border border-slate-200">
             <div>
               Menampilkan{" "}

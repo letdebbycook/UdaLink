@@ -60,7 +60,6 @@ export default function AdminPembayaranPage() {
   const fetchPayments = async () => {
     setLoading(true);
     try {
-      // 1. Coba panggil RPC admin_list_payments (patch backend terbaru)
       const { data: rpcData, error: rpcErr } = await supabase.rpc("admin_list_payments", {
         p_status: "all",
       });
@@ -77,7 +76,6 @@ export default function AdminPembayaranPage() {
 
       console.warn("RPC admin_list_payments gagal, mencoba fallback:", rpcErr?.message);
 
-      // 2. Fallback: Query tabel payments secara langsung tanpa ketergantungan relasi schema cache
       const { data: payData, error: payErr } = await supabase
         .from("payments")
         .select("*")
@@ -90,7 +88,6 @@ export default function AdminPembayaranPage() {
         return;
       }
 
-      // Ambil data profil terkait untuk menampilkan username & display_name
       const userIds = Array.from(new Set(payData.map((p) => p.user_id)));
       const { data: profilesData } = await supabase
         .from("profiles")
@@ -141,7 +138,6 @@ export default function AdminPembayaranPage() {
     setLoadingUrl(true);
 
     try {
-      // Ambil signed url dari bucket payment-proofs (berlaku 1 jam)
       const { data, error } = await supabase.storage
         .from("payment-proofs")
         .createSignedUrl(payment.proof_path, 3600);
@@ -242,7 +238,6 @@ export default function AdminPembayaranPage() {
         </p>
       </div>
 
-      {/* Tabs Menu & Search Filter */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#E2E8F0] pb-3">
         <div className="flex gap-2 overflow-x-auto no-scrollbar">
           <button
@@ -300,7 +295,6 @@ export default function AdminPembayaranPage() {
           </button>
         </div>
 
-        {/* Input Search Pembayaran */}
         <div className="relative max-w-xs w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
           <Input
@@ -316,7 +310,6 @@ export default function AdminPembayaranPage() {
         </div>
       </div>
 
-      {/* Daftar Tabel Pembayaran */}
       {loading ? (
         <div className="flex justify-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-[#16A34A]" />
@@ -333,7 +326,6 @@ export default function AdminPembayaranPage() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {/* Mobile Card View (md:hidden) */}
           <div className="md:hidden space-y-3">
             {paginatedPayments.map((p) => (
               <Card key={p.id} className="border-[#E2E8F0] shadow-xs bg-white">
@@ -405,7 +397,6 @@ export default function AdminPembayaranPage() {
             ))}
           </div>
 
-          {/* Desktop Table View (hidden md:block) */}
           <div className="hidden md:block bg-white rounded-xl border border-[#E2E8F0] overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
@@ -481,7 +472,6 @@ export default function AdminPembayaranPage() {
             </div>
           </div>
 
-          {/* Pagination Controls */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs text-slate-600 bg-white p-4 rounded-xl border border-slate-200">
             <div>
               Menampilkan{" "}
@@ -560,7 +550,6 @@ export default function AdminPembayaranPage() {
                 </div>
               </div>
 
-              {/* Tampilan Gambar Bukti Transfer */}
               <div className="space-y-1.5">
                 <span className="text-[#64748B] font-semibold block">Bukti Transfer Bank:</span>
                 {loadingUrl ? (
@@ -592,7 +581,6 @@ export default function AdminPembayaranPage() {
               </div>
             </div>
 
-            {/* Aksi Persetujuan jika Status Menunggu */}
             {selectedPayment.status === "pending" && (
               <div className="space-y-3 pt-3 border-t border-[#E2E8F0]">
                 {showRejectForm ? (
