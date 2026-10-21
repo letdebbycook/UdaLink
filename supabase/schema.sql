@@ -284,6 +284,7 @@ AS $$
 DECLARE
     v_raw_username TEXT;
     v_username TEXT;
+    v_candidate TEXT;
     v_display_name TEXT;
     v_payment_code INTEGER;
     v_google_email TEXT := NULLIF(NEW.email, '');
@@ -291,26 +292,58 @@ BEGIN
     -- Prioritas 1: username eksplisit dari pendaftaran
     v_raw_username := lower(trim(COALESCE(NEW.raw_user_meta_data->>'username', '')));
 
-    -- Jika tidak ada (mis. sign-up via Google), coba turunkan dari email
+    -- Jika tidak ada (mis. sign-up via Google), turunkan dari email:
+    -- ambil bagian sebelum @, buang alias setelah tanda plus,
+    -- lalu hapus karakter non-alfanumerik (titik, strip, dsb.)
     IF COALESCE(v_raw_username, '') = '' AND v_google_email IS NOT NULL THEN
-        v_raw_username := lower(split_part(v_google_email, '@', 1));
+        v_raw_username := split_part(lower(v_google_email), '@', 1);
+        v_raw_username := split_part(v_raw_username, '+', 1);
+        v_raw_username := regexp_replace(v_raw_username, '[^a-z0-9_]', '', 'g');
+        v_raw_username := substr(v_raw_username, 1, 30);
     END IF;
 
     v_raw_username := lower(trim(COALESCE(v_raw_username, '')));
 
-    -- Jika username kosong atau tidak valid, generate username fallback yang aman
-    IF v_raw_username ~ '^[a-z0-9_]{3,30}$' AND v_raw_username NOT IN (
+    v_username := NULL;
+
+    IF v_raw_username ~ '^[a-z0-9_]{1,30}$' AND v_raw_username NOT IN (
         'admin', 'dashboard', 'daftar', 'masuk', 'go', 'api', 'udalink',
         'bantuan', 'tentang', 'harga', 'syarat', 'privasi', 'login', 'register', 'akun'
-    ) AND NOT EXISTS (SELECT 1 FROM public.profiles WHERE lower(username) = v_raw_username) THEN
-        v_username := v_raw_username;
-    ELSE
+    ) THEN
+        -- Username minimum 3 karakter; dasar pendek diberi prefiks user_
+        IF char_length(v_raw_username) < 3 THEN
+            v_raw_username := 'user_' || v_raw_username;
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM public.profiles WHERE lower(username) = v_raw_username) THEN
+            v_username := v_raw_username;
+        ELSE
+            -- Sudah dipakai: tambah akhiran angka (mis. namapengguna2) hingga tersedia
+            FOR i IN 2..99 LOOP
+                v_candidate := substr(v_raw_username, 1, 30 - char_length(i::text)) || i;
+                EXIT WHEN NOT EXISTS (
+                    SELECT 1 FROM public.profiles WHERE lower(username) = v_candidate
+                );
+            END LOOP;
+
+            IF v_candidate IS NOT NULL AND NOT EXISTS (
+                SELECT 1 FROM public.profiles WHERE lower(username) = v_candidate
+            ) THEN
+                v_username := v_candidate;
+            END IF;
+        END IF;
+    END IF;
+
+    -- Fallback terakhir: username acak yang aman
+    IF v_username IS NULL THEN
         v_username := 'user_' || substr(md5(NEW.id::text || clock_timestamp()::text), 1, 8);
     END IF;
 
-    -- Display name: metadata pendaftaran, lalu nama Google, lalu username
+    -- Display name: metadata pendaftaran, lalu nama dari email, lalu nama Google
     v_display_name := COALESCE(
         NULLIF(trim(COALESCE(NEW.raw_user_meta_data->>'display_name', '')), ''),
+        NULLIF(trim(COALESCE(NEW.raw_user_meta_data->>'username', '')), ''),
+        NULLIF(trim(v_raw_username), ''),
         NULLIF(trim(COALESCE(NEW.raw_user_meta_data->>'full_name', '')), ''),
         NULLIF(trim(COALESCE(NEW.raw_user_meta_data->>'name', '')), ''),
         v_username
