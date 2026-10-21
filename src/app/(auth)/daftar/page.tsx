@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Check, X, Loader2, ArrowRight } from "lucide-react";
+import { Check, X, Loader2, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -16,6 +16,9 @@ export default function DaftarPage() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
@@ -99,6 +102,11 @@ export default function DaftarPage() {
 
     if (password.length < 6) {
       toast.error("Kata sandi minimal 6 karakter.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error("Konfirmasi kata sandi tidak cocok.");
       return;
     }
 
@@ -279,13 +287,60 @@ export default function DaftarPage() {
               <label className="text-xs font-semibold text-[#0F172A] block">
                 Kata Sandi
               </label>
-              <Input
-                type="password"
-                required
-                placeholder="Minimal 6 karakter"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  placeholder="Minimal 6 karakter"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#64748B] transition-colors"
+                  tabIndex={-1}
+                  aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Konfirmasi Password */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-[#0F172A] block">
+                Konfirmasi Kata Sandi
+              </label>
+              <div className="relative">
+                <Input
+                  type={showConfirmPassword ? "text" : "password"}
+                  required
+                  placeholder="Ulangi kata sandi"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#64748B] transition-colors"
+                  tabIndex={-1}
+                  aria-label={showConfirmPassword ? "Sembunyikan konfirmasi" : "Tampilkan konfirmasi"}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {confirmPassword.length > 0 && (
+                <p className="text-[11px]">
+                  {password === confirmPassword ? (
+                    <span className="text-emerald-600 font-medium">Kata sandi cocok!</span>
+                  ) : (
+                    <span className="text-red-500 font-medium">Kata sandi tidak cocok.</span>
+                  )}
+                </p>
+              )}
             </div>
 
             <Button
