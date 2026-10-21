@@ -31,6 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { ImageCropModal } from "@/components/ui/image-crop-modal";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { THEMES, getTheme, ThemeDefinition } from "@/lib/themes";
@@ -73,6 +74,9 @@ export default function TampilanPage() {
   const [bannerToDelete, setBannerToDelete] = useState<Banner | null>(null);
   const [isDeletingBanner, setIsDeletingBanner] = useState(false);
   const [previewBannerIndex, setPreviewBannerIndex] = useState(0);
+
+  // Banner crop state
+  const [bannerCropSrc, setBannerCropSrc] = useState<string | null>(null);
 
   const isPro = plan?.is_pro ?? false;
 
@@ -803,12 +807,12 @@ export default function TampilanPage() {
                                 type="file"
                                 id="banner-file"
                                 accept="image/*"
-                                onChange={async (e) => {
+                                onChange={(e) => {
                                   const f = e.target.files?.[0];
                                   if (!f) return;
-                                  const { file: comp, dataUrl } = await compressImage(f, 1200, 600, 0.85);
-                                  setNewBannerFile(comp);
-                                  setNewBannerPreview(dataUrl);
+                                  const objectUrl = URL.createObjectURL(f);
+                                  setBannerCropSrc(objectUrl);
+                                  e.target.value = "";
                                 }}
                                 className="hidden"
                               />
@@ -1070,6 +1074,26 @@ export default function TampilanPage() {
         icon="trash"
         variant="danger"
       />
+
+      {/* Banner Crop Modal */}
+      {bannerCropSrc && (
+        <ImageCropModal
+          imageSrc={bannerCropSrc}
+          aspect={16 / 9}
+          title="Crop Banner (16:9)"
+          onComplete={async (blob, dataUrl) => {
+            URL.revokeObjectURL(bannerCropSrc);
+            setBannerCropSrc(null);
+            const croppedFile = new File([blob], "banner-crop.webp", { type: "image/webp" });
+            setNewBannerFile(croppedFile);
+            setNewBannerPreview(dataUrl);
+          }}
+          onCancel={() => {
+            URL.revokeObjectURL(bannerCropSrc);
+            setBannerCropSrc(null);
+          }}
+        />
+      )}
     </div>
   );
 }

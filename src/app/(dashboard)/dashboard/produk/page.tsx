@@ -19,6 +19,7 @@ import { detectMarketplace, MARKETPLACE_CONFIG } from "@/lib/marketplace";
 import { formatRupiah } from "@/lib/utils";
 import type { Product, Category, MyPlanResponse, MarketplaceType } from "@/types/database";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { ImageCropModal } from "@/components/ui/image-crop-modal";
 
 export default function ProdukPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -53,6 +54,9 @@ export default function ProdukPage() {
   const [imageFitMode, setImageFitMode] = useState<"contain" | "cover">("contain");
   const [imageZoom, setImageZoom] = useState<number>(1.0);
   const [uploadProgress, setUploadProgress] = useState(false);
+
+  // Crop modal state
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -142,8 +146,8 @@ export default function ProdukPage() {
     }
   }
 
-  // Handle image pick & compression
-  async function handleImagePick(e: React.ChangeEvent<HTMLInputElement>) {
+  // Handle image pick — open crop modal first
+  function handleImagePick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -153,7 +157,25 @@ export default function ProdukPage() {
     }
 
     setRawSelectedFile(file);
-    await processSelectedImage(file, imageFitMode, imageZoom);
+    const objectUrl = URL.createObjectURL(file);
+    setCropSrc(objectUrl);
+    // reset input so same file can be re-selected
+    e.target.value = "";
+  }
+
+  // Called when user confirms the crop
+  async function handleCropComplete(blob: Blob, dataUrl: string) {
+    setCropSrc(null);
+    setUploadProgress(true);
+    try {
+      const croppedFile = new File([blob], "product-crop.webp", { type: "image/webp" });
+      setImageFile(croppedFile);
+      setImagePreview(dataUrl);
+    } catch {
+      toast.error("Gagal memproses hasil crop");
+    } finally {
+      setUploadProgress(false);
+    }
   }
 
   function handleFitModeChange(mode: "contain" | "cover") {
@@ -999,6 +1021,19 @@ export default function ProdukPage() {
         icon="trash"
         variant="danger"
       />
+
+      {/* Crop Modal */}
+      {cropSrc && (
+        <ImageCropModal
+          imageSrc={cropSrc}
+          onComplete={handleCropComplete}
+          onCancel={() => {
+            URL.revokeObjectURL(cropSrc);
+            setCropSrc(null);
+          }}
+        />
+      )}
     </div>
+
   );
 }
