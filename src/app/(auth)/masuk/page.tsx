@@ -88,11 +88,12 @@ function MasukForm() {
       <div className="space-y-3">
         <GoogleAuthButton mode="masuk" redirectPath={redirectTarget} />
         
-        <div className="relative flex items-center justify-center pt-1">
-          <div className="border-t border-[#E2E8F0] w-full" />
-          <span className="bg-white px-3 text-[11px] font-medium text-slate-400 uppercase tracking-wider relative shrink-0">
+        <div className="flex items-center gap-3 py-1">
+          <div className="flex-1 border-t border-[#E2E8F0]" />
+          <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider shrink-0">
             atau dengan email
           </span>
+          <div className="flex-1 border-t border-[#E2E8F0]" />
         </div>
       </div>
 

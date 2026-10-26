@@ -120,6 +120,32 @@ export default function ProdukPage() {
     setFormMarketplace(detected);
   }
 
+  // Normalize URL: auto-prepend https:// if missing
+  function normalizeUrl(url: string): string {
+    const trimmed = url.trim();
+    if (!trimmed) return trimmed;
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
+    return `https://${trimmed}`;
+  }
+
+  // Parse DB error messages to user-friendly text
+  function parseDbError(err: unknown): string {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("products_affiliate_url_check") || msg.includes("affiliate_url")) {
+      return "Link afiliasi harus berawalan https://. Periksa URL yang kamu masukkan.";
+    }
+    if (msg.includes("products_name_check") || msg.includes("value too long")) {
+      return "Nama produk terlalu panjang (maksimal 100 karakter).";
+    }
+    if (msg.includes("free_product_limit") || msg.includes("quota")) {
+      return "Batas kuota produk tercapai. Upgrade ke Pro untuk menambah produk tanpa batas.";
+    }
+    if (msg.includes("duplicate") || msg.includes("unique")) {
+      return "Produk dengan data yang sama sudah ada. Periksa nama atau link produk.";
+    }
+    return msg || "Gagal menyimpan produk. Coba lagi dalam beberapa saat.";
+  }
+
   // Helper untuk proses gambar 1:1 ideal tanpa terpotong
   async function processSelectedImage(
     file: File,
@@ -235,10 +261,20 @@ export default function ProdukPage() {
 
   async function handleSaveProduct(e: React.FormEvent) {
     e.preventDefault();
-    if (!formName.trim() || !formAffiliateUrl.trim()) {
-      toast.error("Nama dan tautan afiliasi wajib diisi");
+    if (!formName.trim()) {
+      toast.error("Nama produk wajib diisi.");
       return;
     }
+    if (formName.trim().length > 100) {
+      toast.error("Nama produk maksimal 100 karakter.");
+      return;
+    }
+    if (!formAffiliateUrl.trim()) {
+      toast.error("Tautan afiliasi wajib diisi.");
+      return;
+    }
+    // Auto-normalize URL
+    const normalizedUrl = normalizeUrl(formAffiliateUrl);
 
     try {
       setSaving(true);
@@ -266,12 +302,24 @@ export default function ProdukPage() {
         finalImageUrl = publicUrlData.publicUrl;
       }
 
+      // Parse price: handle Indonesian locale separators
+      // "12.500,00" → strip comma+decimals first, then strip dots (thousands sep) → 12500
+      // "12500" → 12500
       let parsedPrice: number | null = null;
       if (formPrice.trim() !== "") {
-        const digitsOnly = formPrice.replace(/\D/g, "");
+        const raw = formPrice.trim();
+        // Remove trailing decimal part (,00 or .00)
+        const withoutDecimal = raw.replace(/[,.](\d{1,2})$/, "");
+        // Remove thousands separators (dots or commas used as thousands)
+        const digitsOnly = withoutDecimal.replace(/[.,]/g, "");
         const num = parseInt(digitsOnly, 10);
-        if (isNaN(num) || num === 0) {
-          toast.error("Kosongkan harga atau masukkan harga yang sesuai (lebih dari 0).");
+        if (isNaN(num) || num <= 0) {
+          toast.error("Kosongkan harga atau masukkan angka yang valid (lebih dari 0).");
+          setSaving(false);
+          return;
+        }
+        if (num > 999_999_999) {
+          toast.error("Harga terlalu besar (maksimal Rp 999.999.999).");
           setSaving(false);
           return;
         }
@@ -286,7 +334,7 @@ export default function ProdukPage() {
             name: formName.trim(),
             price: parsedPrice,
             category_id: formCategoryId || null,
-            affiliate_url: formAffiliateUrl.trim(),
+            affiliate_url: normalizedUrl,
             marketplace: formMarketplace,
             image_url: finalImageUrl,
             is_active: formIsActive,
@@ -305,7 +353,7 @@ export default function ProdukPage() {
             name: formName.trim(),
             price: parsedPrice,
             category_id: formCategoryId || null,
-            affiliate_url: formAffiliateUrl.trim(),
+            affiliate_url: normalizedUrl,
             marketplace: formMarketplace,
             image_url: finalImageUrl,
             is_active: formIsActive,
@@ -319,7 +367,7 @@ export default function ProdukPage() {
       setIsModalOpen(false);
       loadData();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Gagal menyimpan produk");
+      toast.error(parseDbError(err));
     } finally {
       setSaving(false);
     }
@@ -861,8 +909,12 @@ export default function ProdukPage() {
                   placeholder="Misal: Kemeja Linen Pria Oversize"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
+                  maxLength={100}
                   required
                 />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  {formName.length}/100 karakter
+                </p>
               </div>
 
               {/* Tautan Afiliasi */}

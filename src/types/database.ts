@@ -86,6 +86,14 @@ export interface Payment {
   created_at: string;
 }
 
+export interface PaymentMethodItem {
+  id: string;
+  bank_name: string;
+  account_number: string;
+  account_name: string;
+  is_active: boolean;
+}
+
 export interface AppSettings {
   id: number;
   pro_price: number;
@@ -95,6 +103,7 @@ export interface AppSettings {
   bank_account_number: string;
   bank_account_name: string;
   admin_whatsapp: string;
+  payment_methods?: PaymentMethodItem[];
   updated_at: string;
   created_at: string;
 }
@@ -176,6 +185,7 @@ export interface MyPlanResponse {
   bank_account_number: string;
   bank_account_name: string;
   admin_whatsapp: string;
+  payment_methods?: PaymentMethodItem[];
 }
 
 export interface AdminPaymentItem {

@@ -23,6 +23,8 @@ export default function DashboardOverviewPage() {
   const [loading, setLoading] = useState(true);
   const [siteUrl, setSiteUrl] = useState("");
 
+  const [profileComplete, setProfileComplete] = useState(false);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -35,13 +37,15 @@ export default function DashboardOverviewPage() {
       // Ambil username dari profil
       const { data: profile } = await supabase
         .from("profiles")
-        .select("username, display_name")
+        .select("username, display_name, avatar_url, bio")
         .eq("id", user.id)
         .single();
 
       if (profile) {
         setUsername(profile.username);
         setDisplayName(profile.display_name);
+        // Profile dianggap lengkap jika ada foto DAN bio
+        setProfileComplete(!!(profile.avatar_url && profile.bio?.trim()));
       }
 
       // Ambil plan dan stats secara paralel
@@ -76,7 +80,7 @@ export default function DashboardOverviewPage() {
     : null;
 
   const checklist = [
-    { label: "Lengkapi foto profil dan bio etalase", done: true },
+    { label: "Lengkapi foto profil dan bio etalase", done: profileComplete },
     { label: "Tambahkan produk affiliate pertamamu", done: (plan?.product_count ?? 0) > 0 },
     { label: "Pasang link etalase di bio media sosialmu", done: false },
   ];

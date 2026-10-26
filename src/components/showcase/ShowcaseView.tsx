@@ -20,6 +20,41 @@ import { getTheme } from "@/lib/themes";
 import { formatRupiah } from "@/lib/utils";
 import { toast } from "sonner";
 
+function SafeProductImage({
+  src,
+  alt,
+  fill,
+  sizes,
+  className,
+}: {
+  src: string | null | undefined;
+  alt: string;
+  fill?: boolean;
+  sizes?: string;
+  className?: string;
+}) {
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError || !src) {
+    return (
+      <div className="h-full w-full flex items-center justify-center text-slate-300">
+        <ShoppingBag className="h-7 w-7" />
+      </div>
+    );
+  }
+
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      fill={fill}
+      sizes={sizes}
+      className={className}
+      onError={() => setHasError(true)}
+    />
+  );
+}
+
 interface ShowcaseViewProps {
   initialData: PublicPageData;
 }
@@ -57,22 +92,38 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return list;
 
-    // Check if query is numeric (Search by product number)
-    const isNumeric = /^\d+$/.test(query);
-    if (isNumeric) {
-      const searchNum = parseInt(query, 10);
-      const exactMatch = list.find((p) => p.number === searchNum);
-      const otherMatches = list.filter((p) => p.number !== searchNum && p.number.toString().includes(query));
+    // Normalize query: strip common prefixes so "#3", "nomor 3", "no 3", "3." all resolve to "3"
+    const normalized = query
+      .replace(/^#/, "")           // "#3" → "3"
+      .replace(/^nomor\s+/, "")    // "nomor 3" → "3"
+      .replace(/^no\.?\s+/, "")    // "no 3" / "no.3" → "3"
+      .replace(/\.$/, "")          // "3." → "3"
+      .trim();
 
-      // Put exact match at the top!
+    const isNumeric = /^\d+$/.test(normalized);
+
+    if (isNumeric) {
+      const searchNum = parseInt(normalized, 10);
+      const exactMatch = list.find((p) => p.number === searchNum);
+      const partialNumMatches = list.filter(
+        (p) => p.number !== searchNum && p.number.toString().includes(normalized)
+      );
+      // Also include products whose name contains the digits (e.g. "iPhone 14" when searching "14")
+      const nameMatches = list.filter(
+        (p) =>
+          p.number !== searchNum &&
+          !partialNumMatches.includes(p) &&
+          p.name.toLowerCase().includes(normalized)
+      );
+
       if (exactMatch) {
-        return [exactMatch, ...otherMatches];
+        return [exactMatch, ...partialNumMatches, ...nameMatches];
       }
-      return otherMatches;
+      return [...partialNumMatches, ...nameMatches];
     }
 
     // Text search by name (case-insensitive)
-    return list.filter((p) => p.name.toLowerCase().includes(query));
+    return list.filter((p) => p.name.toLowerCase().includes(normalized));
   }, [products, selectedCategory, searchQuery]);
 
   // Featured Products (is_featured = true)
@@ -353,7 +404,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                       className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     {banner.title && (
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent p-3 flex flex-col justify-end">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent p-3 pb-8 flex flex-col justify-end z-10">
                         <p className="text-white text-xs font-bold leading-snug line-clamp-2">
                           {banner.title}
                         </p>
@@ -361,7 +412,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                     )}
                     {banner.link_url && (
                       <a
-                        href={banner.link_url}
+                        href={`/go/banner/${banner.id}`}
                         target="_blank"
                         rel="noreferrer"
                         className="absolute inset-0 z-10"
@@ -398,8 +449,8 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                     ›
                   </button>
 
-                  {/* Dot Indicators */}
-                  <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20 px-2 py-1 rounded-full bg-black/30 backdrop-blur-xs">
+                  {/* Dot Indicators with 24px+ tap target */}
+                  <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-0.5 z-20 px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-xs">
                     {banners.map((b, idx) => (
                       <button
                         key={b.id}
@@ -409,12 +460,16 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                           setActiveBannerIndex(idx);
                         }}
                         aria-label={`Lihat banner ${idx + 1}`}
-                        className={`h-1.5 rounded-full transition-all duration-300 ${
-                          idx === activeBannerIndex
-                            ? "w-4 bg-white"
-                            : "w-1.5 bg-white/50 hover:bg-white/80"
-                        }`}
-                      />
+                        className="p-1.5 cursor-pointer flex items-center justify-center min-w-[24px] min-h-[24px]"
+                      >
+                        <span
+                          className={`block h-2 rounded-full transition-all duration-300 ${
+                            idx === activeBannerIndex
+                              ? "w-5 bg-white shadow-xs"
+                              : "w-2 bg-white/50 hover:bg-white/80"
+                          }`}
+                        />
+                      </button>
                     ))}
                   </div>
                 </>
@@ -537,19 +592,13 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                       >
                         #{prod.number}
                       </span>
-                      {prod.image_url ? (
-                        <Image
-                          src={prod.image_url}
-                          alt={prod.name}
-                          fill
-                          sizes="140px"
-                          className="object-contain p-0.5"
-                        />
-                      ) : (
-                        <div className="h-full w-full flex items-center justify-center text-slate-300">
-                          <ShoppingBag className="h-6 w-6" />
-                        </div>
-                      )}
+                      <SafeProductImage
+                        src={prod.image_url}
+                        alt={prod.name}
+                        fill
+                        sizes="140px"
+                        className="object-contain p-0.5"
+                      />
                     </div>
                     <p
                       className="text-[11px] font-medium line-clamp-2 leading-snug"
@@ -675,19 +724,13 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                           </span>
                         )}
 
-                        {prod.image_url ? (
-                          <Image
-                            src={prod.image_url}
-                            alt={prod.name}
-                            fill
-                            sizes="(max-width: 480px) 50vw, 240px"
-                            className="object-contain p-0.5 hover:scale-105 transition-transform duration-200"
-                          />
-                        ) : (
-                          <div className="h-full w-full flex items-center justify-center text-slate-300">
-                            <ShoppingBag className="h-8 w-8" />
-                          </div>
-                        )}
+                        <SafeProductImage
+                          src={prod.image_url}
+                          alt={prod.name}
+                          fill
+                          sizes="(max-width: 480px) 50vw, 240px"
+                          className="object-contain p-0.5 hover:scale-105 transition-transform duration-200"
+                        />
                       </div>
 
                       {/* Nama Produk (Maks 2 Baris) */}
@@ -757,10 +800,11 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
             )},%20saya%20mau%20tanya%20tentang%20produk%20di%20etalase%20kamu`}
             target="_blank"
             rel="noreferrer"
-            className="fixed bottom-5 right-5 sm:absolute sm:bottom-6 sm:right-6 h-14 w-14 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all z-40 border-2 border-white"
+            aria-label={`Chat WhatsApp dengan ${profile.display_name}`}
+            className="fixed bottom-20 right-4 sm:absolute sm:bottom-24 sm:right-4 h-12 w-12 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all z-40 border-2 border-white"
             title="Chat di WhatsApp"
           >
-            <MessageCircle className="h-6 w-6 fill-white" />
+            <MessageCircle className="h-5 w-5 fill-white" />
           </a>
         )}
       </div>

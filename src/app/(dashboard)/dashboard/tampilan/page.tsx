@@ -193,20 +193,32 @@ export default function TampilanPage() {
         }
       }
 
-      // Sanitasi Instagram (ekstrak handle atau simpan bersih)
+      // Sanitasi & Validasi Instagram
       let sanitizedIg: string | null = null;
       if (instagram.trim()) {
         const trimmed = instagram.trim().replace(/^@+/, "");
         const igMatch = trimmed.match(/(?:instagram\.com\/)(?:#!\/)?([a-zA-Z0-9._]+)/i);
-        sanitizedIg = igMatch && igMatch[1] ? igMatch[1] : trimmed.replace(/\/+$/, "");
+        const candidate = igMatch && igMatch[1] ? igMatch[1] : trimmed.replace(/\/+$/, "");
+        if (!/^[a-zA-Z0-9._]{1,30}$/.test(candidate)) {
+          toast.error("Format username Instagram tidak valid. Gunakan huruf, angka, titik, atau garis bawah (maks. 30 karakter).");
+          setSaving(false);
+          return;
+        }
+        sanitizedIg = candidate;
       }
 
-      // Sanitasi TikTok
+      // Sanitasi & Validasi TikTok
       let sanitizedTt: string | null = null;
       if (tiktok.trim()) {
         const trimmed = tiktok.trim().replace(/^@+/, "");
         const ttMatch = trimmed.match(/(?:tiktok\.com\/@?)([a-zA-Z0-9._]+)/i);
-        sanitizedTt = ttMatch && ttMatch[1] ? ttMatch[1] : trimmed.replace(/\/+$/, "");
+        const candidate = ttMatch && ttMatch[1] ? ttMatch[1] : trimmed.replace(/\/+$/, "");
+        if (!/^[a-zA-Z0-9._]{2,24}$/.test(candidate)) {
+          toast.error("Format username TikTok tidak valid. Gunakan huruf, angka, titik, atau garis bawah (2-24 karakter).");
+          setSaving(false);
+          return;
+        }
+        sanitizedTt = candidate;
       }
 
       // Sanitasi YouTube

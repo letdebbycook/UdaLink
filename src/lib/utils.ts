@@ -9,12 +9,14 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatRupiah(amount: number | null | undefined): string {
   if (amount === null || amount === undefined) return "Rp 0";
-  return new Intl.NumberFormat("id-ID", {
+  const formatted = new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount).replace("Rp", "Rp ");
+  }).format(amount);
+  // Remove any whitespace (including non-breaking space \u00a0) between Rp and digits, then add single space
+  return formatted.replace(/^Rp[\s\u00a0]*/, "Rp ");
 }
 
 export function formatTanggal(date: Date | string | null | undefined): string {

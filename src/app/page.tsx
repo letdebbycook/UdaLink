@@ -1,4 +1,6 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import Link from "next/link";
 import {
   Link2,
@@ -13,14 +15,17 @@ import {
   X,
   Layers,
   HelpCircle,
+  Menu,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PhoneMockup } from "@/components/landing/PhoneMockup";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { LandingNavbarAuth } from "@/components/landing/LandingNavbarAuth";
 
 export default function LandingPage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-white text-[#0F172A] flex flex-col font-sans">
       {/* 1. NAVBAR */}
@@ -45,8 +50,57 @@ export default function LandingPage() {
             </Link>
           </nav>
 
-          <LandingNavbarAuth />
+          <div className="flex items-center gap-2">
+            {/* Hamburger — mobile only */}
+            <button
+              type="button"
+              id="mobile-menu-toggle"
+              aria-label={mobileMenuOpen ? "Tutup menu" : "Buka menu"}
+              aria-expanded={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              className="md:hidden p-2 rounded-lg text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] transition-colors"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+            <div className="hidden md:block">
+              <LandingNavbarAuth />
+            </div>
+          </div>
         </div>
+
+        {/* Mobile drawer */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-[#E2E8F0] bg-white/95 backdrop-blur-md">
+            <nav className="max-w-6xl mx-auto px-4 py-4 flex flex-col gap-1">
+              {[
+                { href: "#langkah", label: "Cara Kerja" },
+                { href: "#fitur", label: "Fitur" },
+                { href: "#harga", label: "Harga" },
+                { href: "#faq", label: "FAQ" },
+              ].map(({ href, label }) => (
+                <a
+                  key={href}
+                  href={href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-3 py-2.5 rounded-lg text-sm font-medium text-[#374151] hover:bg-[#F0FDF4] hover:text-[#16A34A] transition-colors"
+                >
+                  {label}
+                </a>
+              ))}
+              <Link
+                href="/nando"
+                target="_blank"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2.5 rounded-lg text-sm font-semibold text-[#16A34A] hover:bg-[#F0FDF4] transition-colors"
+              >
+                Contoh Etalase
+              </Link>
+              <div className="pt-2 border-t border-[#E2E8F0] mt-1">
+                <LandingNavbarAuth />
+              </div>
+            </nav>
+          </div>
+        )}
       </header>
 
       {/* 2. HERO SECTION */}
@@ -69,16 +123,26 @@ export default function LandingPage() {
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 pt-2">
-                <Link href="/daftar" className="w-full sm:w-auto">
-                  <Button size="lg" className="w-full sm:w-auto h-12 px-7 text-base font-bold gap-2 shadow-md shadow-[#16A34A]/20">
-                    <span>Buat Etalase Gratis</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
+                <Link
+                  href="/daftar"
+                  className={buttonVariants({
+                    size: "lg",
+                    className: "w-full sm:w-auto h-12 px-7 text-base font-bold gap-2 shadow-md shadow-[#16A34A]/20",
+                  })}
+                >
+                  <span>Buat Etalase Gratis</span>
+                  <ArrowRight className="h-4 w-4" />
                 </Link>
-                <Link href="/nando" target="_blank" className="w-full sm:w-auto">
-                  <Button variant="outline" size="lg" className="w-full sm:w-auto h-12 px-6 text-base font-semibold">
-                    Lihat Contoh Etalase
-                  </Button>
+                <Link
+                  href="/nando"
+                  target="_blank"
+                  className={buttonVariants({
+                    variant: "outline",
+                    size: "lg",
+                    className: "w-full sm:w-auto h-12 px-6 text-base font-semibold",
+                  })}
+                >
+                  Lihat Contoh Etalase
                 </Link>
               </div>
 
@@ -132,7 +196,7 @@ export default function LandingPage() {
                 Daftar & Buat Akun
               </h3>
               <p className="text-sm text-[#64748B] leading-relaxed">
-                Pilih username unik pilihanmu (contoh: udalink.id/nando), lengkapi foto profil dan bio singkat.
+                Pilih username unik pilihanmu, lengkapi foto profil dan bio singkat.
               </p>
             </div>
 
@@ -210,10 +274,10 @@ export default function LandingPage() {
                 <Smartphone className="h-5 w-5" />
               </div>
               <h3 className="font-bold text-[#0F172A] text-base mb-1.5">
-                Tampilan Khusus Mobile (480px)
+                Tampilan Khusus Mobile
               </h3>
               <p className="text-sm text-[#64748B] leading-relaxed">
-                99% audiens membuka link bio dari smartphone. Desain UdaLink cepat, ringan, dan terasa seperti mini app.
+                Mayoritas audiens membuka link bio dari smartphone. Desain UdaLink cepat, ringan, dan terasa seperti mini app.
               </p>
             </div>
 
@@ -291,15 +355,15 @@ export default function LandingPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <Check className="h-4 w-4 text-[#16A34A] shrink-0" />
-                    <span>3 Tema dasar (Hijau, Putih, Gelap)</span>
+                    <span>4 Tema Dasar (Hijau, Putih, Gelap, Cream)</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Check className="h-4 w-4 text-[#16A34A] shrink-0" />
                     <span>Pencarian nomor & nama produk</span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-[#16A34A] shrink-0" />
-                    <span>Statistik klik 7 hari</span>
+                  <div className="flex items-center gap-3 text-[#94A3B8]">
+                    <X className="h-4 w-4 shrink-0" />
+                    <span className="line-through">Statistik klik pengunjung</span>
                   </div>
                   <div className="flex items-center gap-3 text-[#94A3B8]">
                     <X className="h-4 w-4 shrink-0" />
@@ -317,10 +381,14 @@ export default function LandingPage() {
               </div>
 
               <div className="pt-8">
-                <Link href="/daftar">
-                  <Button variant="outline" className="w-full h-11 font-semibold">
-                    Daftar Gratis
-                  </Button>
+                <Link
+                  href="/daftar"
+                  className={buttonVariants({
+                    variant: "outline",
+                    className: "w-full h-11 font-semibold",
+                  })}
+                >
+                  Daftar Gratis
                 </Link>
               </div>
             </div>
@@ -337,9 +405,14 @@ export default function LandingPage() {
                 <div>
                   <h3 className="text-xl font-bold text-[#0F172A]">Paket Pro</h3>
                   <p className="text-xs text-[#64748B] mt-1">Untuk affiliator profesional yang ingin konversi maksimal.</p>
-                  <div className="mt-4 flex items-baseline gap-1">
-                    <span className="text-3xl font-extrabold text-[#16A34A]">Rp 29.000</span>
-                    <span className="text-xs text-[#64748B]">/ 30 hari</span>
+                  <div className="mt-4 space-y-1">
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-3xl font-extrabold text-[#16A34A]">Rp 29.000</span>
+                      <span className="text-xs text-[#64748B]">/ 30 hari</span>
+                    </div>
+                    <p className="text-[11px] text-[#16A34A] font-semibold">
+                      Atau paket tahunan Rp 249.000 / tahun (Hemat 28%)
+                    </p>
                   </div>
                 </div>
 
@@ -350,7 +423,7 @@ export default function LandingPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <Check className="h-4 w-4 text-[#16A34A] shrink-0" />
-                    <span>Semua 8 Tema (Termasuk 5 Tema Premium)</span>
+                    <span>Semua 16 Tema (4 Dasar + 12 Tema Eksklusif Pro)</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Check className="h-4 w-4 text-[#16A34A] shrink-0" />
@@ -362,7 +435,7 @@ export default function LandingPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <Check className="h-4 w-4 text-[#16A34A] shrink-0" />
-                    <span>Statistik klik lengkap 30 hari</span>
+                    <span>Statistik klik lengkap (7 & 30 hari)</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Check className="h-4 w-4 text-[#16A34A] shrink-0" />
@@ -372,10 +445,13 @@ export default function LandingPage() {
               </div>
 
               <div className="pt-8">
-                <Link href="/daftar">
-                  <Button className="w-full h-11 font-bold shadow-md shadow-[#16A34A]/25">
-                    Mulai Akun Pro
-                  </Button>
+                <Link
+                  href="/daftar"
+                  className={buttonVariants({
+                    className: "w-full h-11 font-bold shadow-md shadow-[#16A34A]/25",
+                  })}
+                >
+                  Mulai Akun Pro
                 </Link>
               </div>
             </div>
@@ -391,7 +467,7 @@ export default function LandingPage() {
               Pertanyaan Umum
             </span>
             <h2 className="text-2xl sm:text-4xl font-bold tracking-tight text-[#0F172A]">
-              Frequently Asked Questions
+              Pertanyaan yang Sering Ditanyakan
             </h2>
           </div>
 
@@ -422,11 +498,15 @@ export default function LandingPage() {
             Buat etalase cantikmu sekarang juga dan permudah ratusan followers belanja produk rekomendasi kamu.
           </p>
           <div className="pt-2">
-            <Link href="/daftar">
-              <Button size="lg" className="h-12 px-8 text-base font-bold shadow-lg shadow-[#16A34A]/25 gap-2">
-                <span>Daftar Gratis Sekarang</span>
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+            <Link
+              href="/daftar"
+              className={buttonVariants({
+                size: "lg",
+                className: "h-12 px-8 text-base font-bold shadow-lg shadow-[#16A34A]/25 gap-2",
+              })}
+            >
+              <span>Daftar Gratis Sekarang</span>
+              <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -442,6 +522,17 @@ export default function LandingPage() {
             <span className="font-bold text-sm text-[#0F172A]">UdaLink</span>
             <span>— Satu link untuk semua produk affiliate</span>
           </div>
+
+          <div className="flex items-center gap-4 text-xs">
+            <Link href="/syarat-ketentuan" className="hover:text-[#16A34A] transition-colors">
+              Syarat & Ketentuan
+            </Link>
+            <span>•</span>
+            <Link href="/kebijakan-privasi" className="hover:text-[#16A34A] transition-colors">
+              Kebijakan Privasi
+            </Link>
+          </div>
+
           <div>
             © 2026 UdaLink · Powered by UdaCoding. All rights reserved.
           </div>

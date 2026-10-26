@@ -4,7 +4,9 @@ import { Metadata } from "next";
 import { getPublicPage } from "@/lib/data/public-page";
 import { ShowcaseView } from "@/components/showcase/ShowcaseView";
 
-export const dynamic = "force-dynamic";
+// Cache showcase page with Incremental Static Regeneration (ISR 60 detik)
+// Mengurangi beban database dan mempercepat respons loading bagi pengunjung
+export const revalidate = 60;
 
 interface PageProps {
   params: Promise<{ username: string }>;
@@ -20,9 +22,40 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
+  const title = `${data.profile.display_name} (@${data.profile.username}) — UdaLink`;
+  const description =
+    data.profile.bio ||
+    `Lihat etalase produk affiliate rekomendasi dari ${data.profile.display_name}. Cari nomor produk dan langsung belanja di marketplace resmi.`;
+  const avatarUrl = data.profile.avatar_url;
+
   return {
-    title: `${data.profile.display_name} — UdaLink`,
-    description: data.profile.bio || `Etalase produk affiliate rekomendasi dari ${data.profile.display_name}.`,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "profile",
+      locale: "id_ID",
+      siteName: "UdaLink",
+      ...(avatarUrl
+        ? {
+            images: [
+              {
+                url: avatarUrl,
+                width: 400,
+                height: 400,
+                alt: data.profile.display_name,
+              },
+            ],
+          }
+        : {}),
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+      ...(avatarUrl ? { images: [avatarUrl] } : {}),
+    },
   };
 }
 

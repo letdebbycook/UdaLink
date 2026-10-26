@@ -23,6 +23,7 @@ export default function LanggananPage() {
 
   // Form Pembayaran
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("yearly");
+  const [selectedMethodId, setSelectedMethodId] = useState<string>("");
   const [senderName, setSenderName] = useState("");
   const [senderBank, setSenderBank] = useState("BCA");
   const [proofFile, setProofFile] = useState<File | null>(null);
@@ -65,6 +66,22 @@ export default function LanggananPage() {
   const paymentCode = plan?.payment_code ?? 123;
   const totalTransfer = activeBasePrice + paymentCode;
   const isPro = plan?.is_pro ?? false;
+
+  const availableMethods =
+    plan?.payment_methods && plan.payment_methods.length > 0
+      ? plan.payment_methods.filter((m) => m.is_active)
+      : [
+          {
+            id: "default_method",
+            bank_name: plan?.bank_name || "BCA",
+            account_number: plan?.bank_account_number || "1234567890",
+            account_name: plan?.bank_account_name || "PT UdaLink Media Nusantara",
+            is_active: true,
+          },
+        ];
+
+  const currentMethod =
+    availableMethods.find((m) => m.id === selectedMethodId) || availableMethods[0];
 
   // Cek apakah ada pembayaran yang sedang pending
   const pendingPayment = payments.find((p) => p.status === "pending");
@@ -338,7 +355,7 @@ export default function LanggananPage() {
               </div>
               <div className="flex items-center gap-2 font-medium">
                 <Check className="w-4 h-4 text-[#16A34A] shrink-0" />
-                <strong>Semua 8 tema premium</strong>
+                <strong>Semua 16 tema (4 dasar + 12 tema PRO)</strong>
               </div>
               <div className="flex items-center gap-2 font-medium">
                 <Check className="w-4 h-4 text-[#16A34A] shrink-0" />
@@ -389,29 +406,58 @@ export default function LanggananPage() {
                 Instruksi Pembayaran Manual & Konfirmasi
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Silakan lakukan transfer ke rekening resmi UdaLink dan unggah foto struk bukti transfer.
+                Silakan pilih metode transfer tujuan di bawah ini dan unggah foto bukti transfer.
               </p>
+            </div>
+
+            {/* Pilihan Metode Pembayaran (Multi Bank / QRIS) */}
+            <div className="space-y-2">
+              <span className="text-xs font-semibold text-slate-700 block">
+                Pilih Bank / Metode Tujuan:
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {availableMethods.map((m) => {
+                  const isSelected = currentMethod.id === m.id;
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedMethodId(m.id);
+                        setSenderBank(m.bank_name);
+                      }}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-[#16A34A] text-white border-[#16A34A] shadow-xs"
+                          : "bg-white text-slate-700 border-slate-200 hover:border-[#16A34A]/50 hover:bg-slate-50"
+                      }`}
+                    >
+                      {m.bank_name}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Info Rekening Tujuan */}
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <span className="text-[11px] font-medium text-slate-500 block">Bank Tujuan</span>
+                <span className="text-[11px] font-medium text-slate-500 block">Bank / Metode Tujuan</span>
                 <span className="text-sm font-bold text-slate-900">
-                  {plan?.bank_name || "BCA"}
+                  {currentMethod.bank_name}
                 </span>
               </div>
 
               <div>
-                <span className="text-[11px] font-medium text-slate-500 block">Nomor Rekening</span>
+                <span className="text-[11px] font-medium text-slate-500 block">Nomor Rekening / No. VA</span>
                 <div className="flex items-center gap-2 mt-0.5">
                   <span className="text-sm font-bold text-slate-900 font-mono">
-                    {plan?.bank_account_number || "8735019283"}
+                    {currentMethod.account_number}
                   </span>
                   <button
                     onClick={() =>
                       copyToClipboard(
-                        plan?.bank_account_number || "8735019283",
+                        currentMethod.account_number,
                         "Nomor rekening"
                       )
                     }
@@ -422,7 +468,7 @@ export default function LanggananPage() {
                   </button>
                 </div>
                 <span className="text-[11px] text-slate-500 block">
-                  a.n. {plan?.bank_account_name || "PT UdaLink Indonesia"}
+                  a.n. {currentMethod.account_name}
                 </span>
               </div>
 

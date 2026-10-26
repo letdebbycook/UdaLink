@@ -57,10 +57,12 @@ export default function DaftarPage() {
     checkSession();
   }, []);
 
-  // Reserved words per PRD
+  // Reserved words per PRD & Next.js system routes
   const reservedWords = [
     "admin", "dashboard", "daftar", "masuk", "go", "api", "udalink",
-    "bantuan", "tentang", "harga", "syarat", "privasi", "login", "register", "akun"
+    "bantuan", "tentang", "harga", "syarat", "privasi", "login", "register", "akun",
+    "_next", "support", "help", "settings", "pengaturan", "faq", "terms", "privacy",
+    "static", "syarat-ketentuan", "kebijakan-privasi"
   ];
 
   const cleanUsername = username.toLowerCase().trim();
@@ -230,7 +232,7 @@ export default function DaftarPage() {
               </label>
               <div className="relative">
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#94A3B8] font-mono">
-                  udalink.id/
+                  udalink.vercel.app/
                 </span>
                 <Input
                   type="text"
@@ -238,7 +240,7 @@ export default function DaftarPage() {
                   placeholder="username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
-                  className="pl-24 pr-9 font-mono text-xs"
+                  className="pl-36 pr-9 font-mono text-xs"
                 />
                 {cleanUsername.length >= 3 && (
                   <span className="absolute right-3 top-1/2 -translate-y-1/2">

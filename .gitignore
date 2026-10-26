@@ -54,6 +54,7 @@ supabase/fix-nando-auth.sql
 supabase/make-admin.sql
 supabase/sprint3-rpc-apply.sql
 supabase/be-bugfix-patch.sql
+supabase/update-admin-password.sql
 
 # unused default next.js assets
 public/*.svg

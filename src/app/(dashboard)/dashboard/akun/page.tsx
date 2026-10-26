@@ -56,7 +56,9 @@ export default function AkunPage() {
   const isValidUsernameFormat = /^[a-z0-9_]{3,30}$/.test(cleanUsername);
   const reservedWords = [
     "admin", "dashboard", "daftar", "masuk", "go", "api", "udalink",
-    "bantuan", "tentang", "harga", "syarat", "privasi", "login", "register", "akun"
+    "bantuan", "tentang", "harga", "syarat", "privasi", "login", "register", "akun",
+    "_next", "support", "help", "settings", "pengaturan", "faq", "terms", "privacy",
+    "static", "syarat-ketentuan", "kebijakan-privasi"
   ];
   const isReservedUsername = reservedWords.includes(cleanUsername);
 
@@ -277,7 +279,7 @@ export default function AkunPage() {
             </label>
             <div className="flex items-center rounded-xl border border-[#E2E8F0] overflow-hidden focus-within:ring-2 focus-within:ring-[#16A34A]/20 focus-within:border-[#16A34A] transition-all bg-white">
               <span className="bg-slate-50 border-r border-[#E2E8F0] px-3.5 py-2 text-xs font-mono text-slate-500 select-none">
-                udalink.id/
+                udalink.vercel.app/
               </span>
               <Input
                 type="text"

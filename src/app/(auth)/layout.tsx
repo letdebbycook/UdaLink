@@ -1,6 +1,12 @@
 import React from "react";
 import Link from "next/link";
 import { Link2 } from "lucide-react";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Masuk & Daftar — UdaLink",
+  description: "Masuk ke akun UdaLink untuk mengelola etalase link produk affiliate kamu.",
+};
 
 export default function AuthLayout({
   children,

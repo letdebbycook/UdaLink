@@ -3,17 +3,55 @@
 import React, { useState } from "react";
 import { Search, ShoppingBag, ExternalLink, Check } from "lucide-react";
 
+import Image from "next/image";
+
 export function PhoneMockup() {
   const [activeTab, setActiveTab] = useState("Semua");
   const [searchVal, setSearchVal] = useState("");
 
   const sampleProducts = [
-    { number: 1, name: "Kemeja Linen Oversized", price: "Rp 139.000", category: "Fashion" },
-    { number: 3, name: "Keyboard Wireless 75%", price: "Rp 499.000", category: "Gadget" },
-    { number: 6, name: "Serum Niacinamide 10%", price: "Rp 89.000", category: "Perawatan" },
-    { number: 11, name: "Stand Laptop Aluminium", price: "Rp 82.000", category: "Gadget" },
-    { number: 5, name: "Celana Cargo Wide Leg", price: "Rp 179.000", category: "Fashion" },
-    { number: 8, name: "Sunscreen SPF 50+", price: "Rp 65.000", category: "Perawatan" },
+    {
+      number: 1,
+      name: "Kemeja Linen Oversized",
+      price: "Rp 139.000",
+      category: "Fashion",
+      image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=200&h=200&fit=crop",
+    },
+    {
+      number: 3,
+      name: "Keyboard Wireless 75%",
+      price: "Rp 499.000",
+      category: "Gadget",
+      image: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=200&h=200&fit=crop",
+    },
+    {
+      number: 6,
+      name: "Serum Niacinamide 10%",
+      price: "Rp 89.000",
+      category: "Perawatan",
+      image: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=200&h=200&fit=crop",
+    },
+    {
+      number: 11,
+      name: "Stand Laptop Aluminium",
+      price: "Rp 82.000",
+      category: "Gadget",
+      image: "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=200&h=200&fit=crop",
+    },
+    {
+      number: 5,
+      name: "Celana Cargo Wide Leg",
+      price: "Rp 179.000",
+      category: "Fashion",
+      image: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=200&h=200&fit=crop",
+    },
+    {
+      number: 8,
+      name: "Sunscreen SPF 50+",
+      price: "Rp 65.000",
+      category: "Perawatan",
+      image: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=200&h=200&fit=crop",
+    },
   ];
 
   const filtered = sampleProducts.filter((p) => {
@@ -113,11 +151,17 @@ export function PhoneMockup() {
                     : "border-[#E2E8F0]"
                 }`}
               >
-                <div className="relative aspect-square rounded-lg bg-slate-100 mb-1 flex items-center justify-center overflow-hidden">
-                  <span className="absolute top-1 left-1 bg-black/70 text-white text-[8px] font-bold px-1 rounded">
+                <div className="relative aspect-square rounded-lg bg-slate-100 mb-1 overflow-hidden">
+                  <span className="absolute top-1 left-1 bg-black/75 text-white text-[8px] font-bold px-1 rounded z-10 shadow-xs">
                     #{prod.number}
                   </span>
-                  <ShoppingBag className="h-6 w-6 text-slate-400" />
+                  <Image
+                    src={prod.image}
+                    alt={prod.name}
+                    fill
+                    sizes="120px"
+                    className="object-cover"
+                  />
                 </div>
                 <p className="text-[10px] font-medium text-[#0F172A] line-clamp-1 leading-tight">
                   {prod.name}
