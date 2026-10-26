@@ -1,0 +1,231 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="100%" height="100%" fill="none">
+  <title>UdaLink - Platform Link di Bio Khusus Affiliator</title>
+  <desc>Etalase tautan bio pintar untuk affiliator Shopee, TikTok Shop, Tokopedia, dan Lazada dengan pencarian berbasis nomor produk.</desc>
+
+  <defs>
+    <!-- Background Gradients -->
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B1120" />
+      <stop offset="60%" stop-color="#090D16" />
+      <stop offset="100%" stop-color="#04070D" />
+    </linearGradient>
+
+    <!-- Emerald Glow -->
+    <radialGradient id="emerald-glow" cx="20%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#16A34A" stop-opacity="0.18" />
+      <stop offset="50%" stop-color="#10B981" stop-opacity="0.05" />
+      <stop offset="100%" stop-color="#16A34A" stop-opacity="0" />
+    </radialGradient>
+
+    <radialGradient id="mockup-glow" cx="80%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#059669" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="#059669" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Accent Gradients -->
+    <linearGradient id="primary-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#34D399" />
+      <stop offset="100%" stop-color="#10B981" />
+    </linearGradient>
+
+    <linearGradient id="card-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#0F172A" stop-opacity="0.95" />
+    </linearGradient>
+
+    <!-- Pattern Grid -->
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#1E293B" stroke-width="0.75" stroke-opacity="0.4" />
+    </pattern>
+
+    <filter id="card-shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#000000" flood-opacity="0.5" />
+    </filter>
+  </defs>
+
+  <style>
+    .font-sans { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+  </style>
+
+  <!-- Base Canvas -->
+  <rect width="1200" height="400" rx="16" fill="url(#bg-grad)" />
+  <rect width="1200" height="400" rx="16" fill="url(#emerald-glow)" />
+  <rect width="1200" height="400" rx="16" fill="url(#mockup-glow)" />
+  <rect width="1200" height="400" rx="16" fill="url(#grid)" />
+  <rect width="1200" height="400" rx="16" stroke="#334155" stroke-width="1.5" stroke-opacity="0.4" />
+
+  <!-- LEFT COLUMN: Brand Story & Value Proposition -->
+  <g transform="translate(80, 52)">
+    <!-- Category Pill Badge -->
+    <rect width="310" height="30" rx="15" fill="#064E3B" fill-opacity="0.5" stroke="#059669" stroke-width="1" />
+    <circle cx="16" cy="15" r="4.5" fill="#34D399" />
+    <text x="30" y="19.5" fill="#A7F3D0" font-size="11" font-weight="700" letter-spacing="1.2" class="font-mono">
+      LINK-IN-BIO AFFILIATOR INDONESIA
+    </text>
+
+    <!-- UdaLink Brand Title -->
+    <g transform="translate(0, 56)">
+      <!-- Logo Mark (Chain link icon) -->
+      <rect width="44" height="44" rx="12" fill="#16A34A" />
+      <path d="M18 26l-3 3a4.24 4.24 0 01-6-6l3-3a4.24 4.24 0 016 0m2-8l3-3a4.24 4.24 0 016 6l-3 3a4.24 4.24 0 01-6 0m-4 2l4-4" 
+            stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+      <text x="58" y="34" fill="#FFFFFF" font-size="38" font-weight="800" letter-spacing="-1" class="font-sans">
+        UdaLink
+      </text>
+      <text x="222" y="34" fill="#34D399" font-size="38" font-weight="800" class="font-sans">.</text>
+    </g>
+
+    <!-- Subtitle & Punchline -->
+    <text x="0" y="132" fill="#F8FAFC" font-size="20" font-weight="600" class="font-sans">
+      Satu etalase pintar untuk ribuan racun belanja.
+    </text>
+
+    <text x="0" y="162" fill="#94A3B8" font-size="14" font-weight="400" class="font-sans">
+      Penonton video cukup cari nomor produk (misal: 
+    </text>
+    <text x="325" y="162" fill="#38BDF8" font-size="14" font-weight="700" class="font-mono">#3</text>
+    <text x="345" y="162" fill="#94A3B8" font-size="14" font-weight="400" class="font-sans">
+      ) langsung diarahkan
+    </text>
+    <text x="0" y="184" fill="#94A3B8" font-size="14" font-weight="400" class="font-sans">
+      ke marketplace affiliate dengan server-side tracking anti-fraud.
+    </text>
+
+    <!-- Supported Marketplace Tags -->
+    <g transform="translate(0, 218)">
+      <text x="0" y="14" fill="#64748B" font-size="11" font-weight="600" letter-spacing="0.8" class="font-mono">
+        MENDUKUNG:
+      </text>
+
+      <!-- Shopee -->
+      <g transform="translate(85, -2)">
+        <rect width="84" height="24" rx="6" fill="#EA580C" fill-opacity="0.15" stroke="#EA580C" stroke-width="1" stroke-opacity="0.5" />
+        <circle cx="12" cy="12" r="3" fill="#FB923C" />
+        <text x="22" y="15.5" fill="#FED7AA" font-size="11" font-weight="600" class="font-sans">Shopee</text>
+      </g>
+
+      <!-- TikTok -->
+      <g transform="translate(177, -2)">
+        <rect width="90" height="24" rx="6" fill="#000000" fill-opacity="0.4" stroke="#475569" stroke-width="1" />
+        <circle cx="12" cy="12" r="3" fill="#22D3EE" />
+        <text x="22" y="15.5" fill="#E2E8F0" font-size="11" font-weight="600" class="font-sans">TikTok Shop</text>
+      </g>
+
+      <!-- Tokopedia -->
+      <g transform="translate(275, -2)">
+        <rect width="94" height="24" rx="6" fill="#16A34A" fill-opacity="0.15" stroke="#16A34A" stroke-width="1" stroke-opacity="0.5" />
+        <circle cx="12" cy="12" r="3" fill="#4ADE80" />
+        <text x="22" y="15.5" fill="#BBF7D0" font-size="11" font-weight="600" class="font-sans">Tokopedia</text>
+      </g>
+
+      <!-- Lazada -->
+      <g transform="translate(377, -2)">
+        <rect width="78" height="24" rx="6" fill="#2563EB" fill-opacity="0.15" stroke="#2563EB" stroke-width="1" stroke-opacity="0.5" />
+        <circle cx="12" cy="12" r="3" fill="#60A5FA" />
+        <text x="22" y="15.5" fill="#BFDBFE" font-size="11" font-weight="600" class="font-sans">Lazada</text>
+      </g>
+    </g>
+
+    <!-- Engineering Highlights Bar -->
+    <g transform="translate(0, 268)">
+      <rect width="520" height="34" rx="8" fill="#0F172A" stroke="#1E293B" stroke-width="1" />
+      <text x="14" y="21.5" fill="#38BDF8" font-size="11" font-weight="600" class="font-mono">⚡ Next.js 16</text>
+      <text x="110" y="21.5" fill="#475569" font-size="11">•</text>
+      <text x="125" y="21.5" fill="#34D399" font-size="11" font-weight="600" class="font-mono">🛡️ Supabase RLS</text>
+      <text x="238" y="21.5" fill="#475569" font-size="11">•</text>
+      <text x="253" y="21.5" fill="#FBBF24" font-size="11" font-weight="600" class="font-mono">📊 60m Dedup</text>
+      <text x="348" y="21.5" fill="#475569" font-size="11">•</text>
+      <text x="363" y="21.5" fill="#E2E8F0" font-size="11" font-weight="600" class="font-mono">🎨 16 Theme Packs</text>
+    </g>
+  </g>
+
+  <!-- RIGHT COLUMN: Stylized Showcase Mobile Mockup -->
+  <g transform="translate(730, 28)" filter="url(#card-shadow)">
+    <!-- Phone Outer Body -->
+    <rect width="390" height="344" rx="24" fill="#0F172A" stroke="#334155" stroke-width="2" />
+
+    <!-- Top Status Bar / Notch -->
+    <rect x="140" y="10" width="110" height="14" rx="7" fill="#020617" />
+    <circle cx="150" cy="17" r="3" fill="#1E293B" />
+    <circle cx="230" cy="17" r="2.5" fill="#334155" />
+
+    <!-- Etalase Header inside Phone -->
+    <g transform="translate(24, 38)">
+      <!-- Avatar -->
+      <circle cx="24" cy="24" r="22" fill="#16A34A" stroke="#34D399" stroke-width="2" />
+      <text x="18" y="30" fill="#FFFFFF" font-size="16" font-weight="700" class="font-sans">N</text>
+
+      <!-- Profile Details -->
+      <text x="56" y="20" fill="#F8FAFC" font-size="14" font-weight="700" class="font-sans">Nando Deals</text>
+      <!-- Pro Badge -->
+      <rect x="144" y="8" width="46" height="16" rx="4" fill="#F59E0B" fill-opacity="0.2" stroke="#F59E0B" stroke-width="0.8" />
+      <text x="151" y="19" fill="#FCD34D" font-size="9" font-weight="700" class="font-sans">★ PRO</text>
+
+      <text x="56" y="36" fill="#94A3B8" font-size="11" class="font-mono">@nando • udalink.vercel.app/nando</text>
+    </g>
+
+    <!-- Search Input Simulation -->
+    <g transform="translate(24, 96)">
+      <rect width="342" height="34" rx="8" fill="#1E293B" stroke="#059669" stroke-width="1.2" />
+      <!-- Search Icon -->
+      <circle cx="18" cy="17" r="5" fill="none" stroke="#34D399" stroke-width="1.5" />
+      <line x1="22" y1="21" x2="26" y2="25" stroke="#34D399" stroke-width="1.5" stroke-linecap="round" />
+      <!-- Typed text with blinking cursor -->
+      <text x="34" y="22" fill="#34D399" font-size="12" font-weight="700" class="font-mono">#3</text>
+      <text x="54" y="22" fill="#F8FAFC" font-size="12" class="font-sans">Powerbank Fast Charging</text>
+      <rect x="220" y="10" width="1.5" height="14" fill="#34D399" />
+    </g>
+
+    <!-- Search Match Card -->
+    <g transform="translate(24, 142)">
+      <rect width="342" height="96" rx="12" fill="url(#card-grad)" stroke="#16A34A" stroke-width="1.2" />
+
+      <!-- Number Tag (#3) -->
+      <rect x="12" y="12" width="34" height="20" rx="4" fill="#16A34A" />
+      <text x="21" y="26" fill="#FFFFFF" font-size="11" font-weight="800" class="font-mono">#3</text>
+
+      <!-- Product Image Mock -->
+      <rect x="12" y="38" width="48" height="46" rx="6" fill="#334155" />
+      <path d="M26 61l6-6 10 10m-4-6l4-4 8 8" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+
+      <!-- Title & Details -->
+      <text x="68" y="27" fill="#F8FAFC" font-size="13" font-weight="700" class="font-sans">
+        Powerbank Fast 20000mAh
+      </text>
+      <text x="68" y="47" fill="#64748B" font-size="11" class="font-sans">
+        Elektronik &amp; Gadget • 
+      </text>
+      <text x="175" y="47" fill="#FB923C" font-size="11" font-weight="600" class="font-sans">Shopee</text>
+
+      <text x="68" y="74" fill="#34D399" font-size="14" font-weight="800" class="font-mono">
+        Rp 145.000
+      </text>
+
+      <!-- Buy CTA Button -->
+      <rect x="238" y="52" width="92" height="32" rx="6" fill="#16A34A" />
+      <text x="252" y="72" fill="#FFFFFF" font-size="11" font-weight="700" class="font-sans">
+        Beli di Sini ↗
+      </text>
+    </g>
+
+    <!-- Metrics / Analytics Footnote in phone -->
+    <g transform="translate(24, 252)">
+      <rect width="342" height="70" rx="10" fill="#020617" stroke="#1E293B" stroke-width="1" />
+      <text x="16" y="24" fill="#94A3B8" font-size="11" font-weight="600" class="font-sans">Statistik Real-time Akun @nando:</text>
+      
+      <text x="16" y="52" fill="#38BDF8" font-size="16" font-weight="800" class="font-mono">1.248</text>
+      <text x="60" y="52" fill="#64748B" font-size="11" class="font-sans">Total Klik</text>
+
+      <line x1="120" y1="36" x2="120" y2="58" stroke="#1E293B" stroke-width="1" />
+
+      <text x="136" y="52" fill="#34D399" font-size="16" font-weight="800" class="font-mono">12</text>
+      <text x="156" y="52" fill="#64748B" font-size="11" class="font-sans">Produk Aktif</text>
+
+      <line x1="230" y1="36" x2="230" y2="58" stroke="#1E293B" stroke-width="1" />
+
+      <text x="246" y="52" fill="#FBBF24" font-size="16" font-weight="800" class="font-mono">100%</text>
+      <text x="288" y="52" fill="#64748B" font-size="11" class="font-sans">Uptime</text>
+    </g>
+  </g>
+</svg>
