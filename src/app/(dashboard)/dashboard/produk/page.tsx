@@ -92,9 +92,9 @@ export default function ProdukPage() {
     loadData();
   }, [loadData]);
 
-  // Quota calculation
+  // Quota calculation (hanya menghitung produk aktif sesuai kriteria BE-DATA-01)
   const isPro = plan?.is_pro ?? false;
-  const currentCount = products.length;
+  const currentCount = products.filter((p) => p.is_active).length;
   const freeLimit = plan?.free_product_limit ?? 30;
   const isQuotaFull = !isPro && currentCount >= freeLimit;
 
@@ -303,15 +303,15 @@ export default function ProdukPage() {
       }
 
       // Parse price: handle Indonesian locale separators
-      // "12.500,00" → strip comma+decimals first, then strip dots (thousands sep) → 12500
-      // "12500" → 12500
+      // "12.500,00" / "12.500" / "12500" → 12500
       let parsedPrice: number | null = null;
       if (formPrice.trim() !== "") {
         const raw = formPrice.trim();
-        // Remove trailing decimal part (,00 or .00)
-        const withoutDecimal = raw.replace(/[,.](\d{1,2})$/, "");
-        // Remove thousands separators (dots or commas used as thousands)
-        const digitsOnly = withoutDecimal.replace(/[.,]/g, "");
+        let cleaned = raw.replace(/^rp\.?\s*/i, "");
+        // Remove trailing decimal sen part (,00 or .00)
+        cleaned = cleaned.replace(/[,.](\d{1,2})$/, "");
+        // Remove thousands separators & non-digits
+        const digitsOnly = cleaned.replace(/\D/g, "");
         const num = parseInt(digitsOnly, 10);
         if (isNaN(num) || num <= 0) {
           toast.error("Kosongkan harga atau masukkan angka yang valid (lebih dari 0).");
@@ -975,15 +975,19 @@ export default function ProdukPage() {
                     <Input
                       type="text"
                       inputMode="numeric"
-                      pattern="[0-9]*"
-                      placeholder="Contoh: 125000"
+                      placeholder="Contoh: 12500"
                       value={formPrice}
                       onChange={(e) => {
-                        const cleaned = e.target.value.replace(/\D/g, "");
+                        const val = e.target.value;
+                        let cleaned = val.replace(/^rp\.?\s*/i, "");
+                        // Jika diakhiri format sen desimal seperti ,00 atau .00 (1-2 digit), buang sen-nya
+                        cleaned = cleaned.replace(/[,.](\d{1,2})$/, "");
+                        // Buang separator titik/koma/spasi
+                        cleaned = cleaned.replace(/\D/g, "");
                         setFormPrice(cleaned);
                       }}
                       onKeyDown={(e) => {
-                        if (["-", "+", "e", "E", "."].includes(e.key)) {
+                        if (["-", "+", "e", "E"].includes(e.key)) {
                           e.preventDefault();
                         }
                       }}

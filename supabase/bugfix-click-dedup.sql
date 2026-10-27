@@ -17,7 +17,9 @@ CREATE INDEX IF NOT EXISTS idx_clicks_dedup
   WHERE session_id IS NOT NULL;
 
 -- 3. Fungsi record_click dengan deduplication 60 menit per sesi
--- Signature ditambah parameter opsional p_session_id (default NULL = backward compatible)
+-- PENTING: Drop fungsi lama 1-parameter agar PostgREST tidak bentrok (PGRST203)
+DROP FUNCTION IF EXISTS public.record_click(UUID);
+
 CREATE OR REPLACE FUNCTION public.record_click(
   p_product_id UUID,
   p_session_id TEXT DEFAULT NULL

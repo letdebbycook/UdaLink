@@ -97,14 +97,20 @@ CREATE TABLE IF NOT EXISTS public.banners (
 -- 2.6 TABEL clicks
 CREATE TABLE IF NOT EXISTS public.clicks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    product_id UUID NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
+    product_id UUID REFERENCES public.products(id) ON DELETE CASCADE,
+    banner_id UUID REFERENCES public.banners(id) ON DELETE CASCADE,
     owner_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    session_id TEXT,
+    ip_hint TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT check_click_target CHECK (product_id IS NOT NULL OR banner_id IS NOT NULL)
 );
 
 -- Indexes untuk tabel clicks
 CREATE INDEX IF NOT EXISTS idx_clicks_owner_created ON public.clicks (owner_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_clicks_product_created ON public.clicks (product_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_clicks_product_created ON public.clicks (product_id, created_at DESC) WHERE product_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_clicks_banner_created ON public.clicks (banner_id, created_at DESC) WHERE banner_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_clicks_dedup ON public.clicks (product_id, session_id, created_at) WHERE session_id IS NOT NULL;
 
 -- 2.7 TABEL payments
 CREATE TABLE IF NOT EXISTS public.payments (
@@ -227,7 +233,10 @@ BEGIN
         v_free_limit := 30;
     END IF;
 
-    SELECT count(*) INTO v_current_count FROM public.products WHERE user_id = v_user_id;
+    -- Kuota gratis hanya menghitung produk yang aktif (is_active = true)
+    SELECT count(*) INTO v_current_count 
+    FROM public.products 
+    WHERE user_id = v_user_id AND is_active = true;
 
     RETURN v_current_count < v_free_limit;
 END;
@@ -304,8 +313,39 @@ BEGIN
         v_display_name := substr(v_display_name, 1, 50);
     END IF;
 
-    -- Buat kode pembayaran unik 1-999 secara acak
-    v_payment_code := floor(random() * 999 + 1)::integer;
+    -- Buat kode pembayaran unik 100-999 secara acak dengan retry dan validasi keunikan
+    DECLARE
+        v_attempts INTEGER := 0;
+    BEGIN
+        LOOP
+            v_payment_code := floor(random() * 899 + 100)::integer;
+            IF NOT EXISTS (
+                SELECT 1 FROM public.memberships WHERE payment_code = v_payment_code
+            ) THEN
+                EXIT;
+            END IF;
+
+            v_attempts := v_attempts + 1;
+            IF v_attempts > 25 THEN
+                SELECT coalesce(
+                    (
+                        SELECT s.num
+                        FROM generate_series(100, 999) AS s(num)
+                        LEFT JOIN (
+                            SELECT m.payment_code
+                            FROM public.memberships m
+                            JOIN public.payments p ON p.user_id = m.user_id AND p.status = 'pending'
+                        ) used ON s.num = used.payment_code
+                        WHERE used.payment_code IS NULL
+                        ORDER BY random()
+                        LIMIT 1
+                    ),
+                    floor(random() * 899 + 100)::integer
+                ) INTO v_payment_code;
+                EXIT;
+            END IF;
+        END LOOP;
+    END;
 
     -- 1. Buat baris profiles
     INSERT INTO public.profiles (id, username, display_name)
@@ -768,8 +808,12 @@ CREATE POLICY "payment_proofs_owner_insert" ON storage.objects
 -- 7. FUNGSI DATABASE (RPC) PUBLIK & AFFILIATOR (SPRINT 2)
 -- ==============================================================================
 
--- 7.1 record_click(p_product_id uuid)
-CREATE OR REPLACE FUNCTION public.record_click(p_product_id UUID)
+-- 7.1 record_click(p_product_id uuid, p_session_id text)
+DROP FUNCTION IF EXISTS public.record_click(UUID);
+CREATE OR REPLACE FUNCTION public.record_click(
+    p_product_id UUID,
+    p_session_id TEXT DEFAULT NULL
+)
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -777,7 +821,7 @@ SET search_path = public
 AS $$
 DECLARE
     v_product RECORD;
-    v_is_suspended BOOLEAN;
+    v_count INT := 0;
 BEGIN
     SELECT p.id, p.user_id, p.affiliate_url, p.marketplace, p.is_active, m.is_suspended
     INTO v_product
@@ -789,16 +833,84 @@ BEGIN
         RETURN NULL;
     END IF;
 
-    INSERT INTO public.clicks (product_id, owner_id)
-    VALUES (v_product.id, v_product.user_id);
+    -- Deduplikasi 60 menit per sesi
+    IF p_session_id IS NOT NULL AND length(p_session_id) > 0 THEN
+        SELECT COUNT(*) INTO v_count
+        FROM public.clicks
+        WHERE product_id = v_product.id
+          AND session_id = p_session_id
+          AND created_at > (now() - INTERVAL '60 minutes');
+
+        IF v_count > 0 THEN
+            RETURN jsonb_build_object(
+                'affiliate_url', v_product.affiliate_url,
+                'marketplace',   v_product.marketplace,
+                'deduplicated',  true
+            );
+        END IF;
+    END IF;
+
+    INSERT INTO public.clicks (product_id, owner_id, session_id)
+    VALUES (v_product.id, v_product.user_id, p_session_id);
 
     RETURN jsonb_build_object(
         'affiliate_url', v_product.affiliate_url,
-        'marketplace', v_product.marketplace
+        'marketplace',   v_product.marketplace,
+        'deduplicated',  false
     );
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.record_click(UUID) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.record_click(UUID, TEXT) TO anon, authenticated;
+
+-- 7.1b record_banner_click(p_banner_id uuid, p_session_id text)
+CREATE OR REPLACE FUNCTION public.record_banner_click(
+    p_banner_id UUID,
+    p_session_id TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_banner RECORD;
+    v_count INT := 0;
+BEGIN
+    SELECT b.id, b.user_id, b.link_url, b.is_active, m.is_suspended
+    INTO v_banner
+    FROM public.banners b
+    JOIN public.memberships m ON m.user_id = b.user_id
+    WHERE b.id = p_banner_id;
+
+    IF NOT FOUND OR v_banner.is_active IS NOT TRUE OR v_banner.is_suspended IS TRUE THEN
+        RETURN NULL;
+    END IF;
+
+    IF p_session_id IS NOT NULL AND length(p_session_id) > 0 THEN
+        SELECT COUNT(*) INTO v_count
+        FROM public.clicks
+        WHERE banner_id = v_banner.id
+          AND session_id = p_session_id
+          AND created_at > (now() - INTERVAL '60 minutes');
+
+        IF v_count > 0 THEN
+            RETURN jsonb_build_object(
+                'link_url', v_banner.link_url,
+                'deduplicated', true
+            );
+        END IF;
+    END IF;
+
+    INSERT INTO public.clicks (banner_id, owner_id, session_id)
+    VALUES (v_banner.id, v_banner.user_id, p_session_id);
+
+    RETURN jsonb_build_object(
+        'link_url', v_banner.link_url,
+        'deduplicated', false
+    );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.record_banner_click(UUID, TEXT) TO anon, authenticated;
 
 -- 7.2 get_public_page(p_username text)
 CREATE OR REPLACE FUNCTION public.get_public_page(p_username TEXT)
@@ -1055,9 +1167,10 @@ BEGIN
     FROM public.app_settings
     WHERE id = 1;
 
+    -- Hitung produk aktif milik user
     SELECT count(*) INTO v_product_count
     FROM public.products
-    WHERE user_id = v_user_id;
+    WHERE user_id = v_user_id AND is_active = true;
 
     v_is_pro := (v_membership.pro_until IS NOT NULL AND v_membership.pro_until > now());
 
