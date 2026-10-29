@@ -261,10 +261,6 @@ export default function TampilanPage() {
       toast.error("Fitur banner etalase khusus pelanggan PRO");
       return;
     }
-    if (!newBannerFile) {
-      toast.error("Silakan pilih gambar banner terlebih dahulu");
-      return;
-    }
     if (banners.length >= 3) {
       toast.error("Maksimal 3 banner promosi aktif");
       return;

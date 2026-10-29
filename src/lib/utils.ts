@@ -24,3 +24,18 @@ export function formatTanggal(date: Date | string | null | undefined): string {
   const d = typeof date === "string" ? new Date(date) : date;
   return format(d, "d MMMM yyyy", { locale: id });
 }
+
+export function getSiteDomain(): string {
+  if (typeof window !== "undefined" && window.location?.host) {
+    return window.location.host;
+  }
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://udalink.vercel.app";
+  return siteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+}
+
+export function getSiteUrl(): string {
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin;
+  }
+  return process.env.NEXT_PUBLIC_SITE_URL || "https://udalink.vercel.app";
+}

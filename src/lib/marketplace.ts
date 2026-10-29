@@ -1,19 +1,58 @@
 import { MarketplaceType } from "@/types/database";
 
 export function detectMarketplace(url: string): MarketplaceType {
-  const lower = url.toLowerCase().trim();
-  if (lower.includes("shopee.co.id") || lower.includes("shp.ee") || lower.includes("shopee.com")) {
-    return "shopee";
+  const trimmed = url.trim();
+  if (!trimmed) return "lainnya";
+
+  try {
+    const parsed = new URL(trimmed.startsWith("http") ? trimmed : `https://${trimmed}`);
+    const host = parsed.hostname.toLowerCase();
+    const path = parsed.pathname.toLowerCase();
+
+    // Shopee Indonesia & shortlinks
+    if (
+      host.endsWith("shopee.co.id") ||
+      host === "shp.ee" ||
+      host.endsWith("shope.ee") ||
+      (host.endsWith("shopee.com") && (path.includes("/product/") || host.startsWith("affiliate.")))
+    ) {
+      return "shopee";
+    }
+
+    // Tokopedia & shortlinks
+    if (
+      host.endsWith("tokopedia.com") ||
+      host.endsWith("tokopedia.link") ||
+      host === "tkp.me"
+    ) {
+      return "tokopedia";
+    }
+
+    // TikTok Shop: subdomain shop atau path produk/toko khusus
+    if (
+      host === "shop.tiktok.com" ||
+      host.endsWith(".shop.tiktok.com") ||
+      (host.endsWith("tiktok.com") &&
+        (path.includes("/product/") ||
+         path.includes("/shop/") ||
+         path.includes("/view/product/") ||
+         path.startsWith("/t/")))
+    ) {
+      return "tiktok";
+    }
+
+    // Lazada Indonesia & shortlinks
+    if (host.endsWith("lazada.co.id") || (host.endsWith("lazada.com") && path.includes("/products/"))) {
+      return "lazada";
+    }
+  } catch {
+    const lower = trimmed.toLowerCase();
+    if (lower.includes("shopee.co.id") || lower.includes("shp.ee")) return "shopee";
+    if (lower.includes("tokopedia.com") || lower.includes("tokopedia.link")) return "tokopedia";
+    if (lower.includes("shop.tiktok.com") || lower.includes("tiktok.com/view/product")) return "tiktok";
+    if (lower.includes("lazada.co.id")) return "lazada";
   }
-  if (lower.includes("tokopedia.com") || lower.includes("tokopedia.link")) {
-    return "tokopedia";
-  }
-  if (lower.includes("tiktok.com")) {
-    return "tiktok";
-  }
-  if (lower.includes("lazada.co.id") || lower.includes("lazada.com")) {
-    return "lazada";
-  }
+
   return "lainnya";
 }
 

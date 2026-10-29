@@ -14,7 +14,11 @@ import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 function MasukForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTarget = searchParams.get("redirect") || "/dashboard";
+  const rawRedirect = searchParams.get("redirect") || "/dashboard";
+  const redirectTarget =
+    rawRedirect.startsWith("/") && !rawRedirect.startsWith("//") && !rawRedirect.includes("://")
+      ? rawRedirect
+      : "/dashboard";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -46,13 +50,20 @@ function MasukForm() {
         return;
       }
 
-      // Role admin langsung diarahkan ke panel admin saja
+      // Cek status suspend dan role admin
       if (signInData?.user) {
         const { data: membership } = await supabase
           .from("memberships")
-          .select("role")
+          .select("role, is_suspended")
           .eq("user_id", signInData.user.id)
           .single();
+
+        if (membership?.is_suspended) {
+          toast.error("Akun Anda telah dinonaktifkan oleh administrator.");
+          router.push("/akun-dinonaktifkan");
+          router.refresh();
+          return;
+        }
 
         if (membership?.role === "admin") {
           toast.success("Selamat datang Admin! Mengarahkan ke panel admin...");

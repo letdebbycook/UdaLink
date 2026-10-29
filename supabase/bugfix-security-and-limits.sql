@@ -53,7 +53,7 @@ SET search_path = public
 AS $$
 DECLARE
     v_is_pro BOOLEAN;
-    v_free_themes TEXT[] := ARRAY['hijau', 'putih', 'gelap', 'cream'];
+    v_free_themes TEXT[] := ARRAY['hijau', 'putih', 'gelap', 'monokrom'];
 BEGIN
     -- Cek apakah user berstatus Pro
     v_is_pro := public.is_pro(NEW.id);
@@ -194,12 +194,17 @@ BEGIN
 
     SELECT count(*) INTO v_product_count
     FROM public.products
-    WHERE user_id = v_user_id;
+    WHERE user_id = v_user_id AND is_active = true;
 
     v_is_pro := (v_membership.pro_until IS NOT NULL AND v_membership.pro_until > now());
 
-    -- Gunakan kode pembayaran unik atau generate random 100-999
-    v_payment_code := COALESCE(v_membership.payment_code, floor(random() * 900 + 100)::integer);
+    -- Gunakan kode pembayaran unik yang persisten
+    IF v_membership.payment_code IS NULL THEN
+        v_payment_code := floor(random() * 900 + 100)::integer;
+        UPDATE public.memberships SET payment_code = v_payment_code WHERE user_id = v_user_id;
+    ELSE
+        v_payment_code := v_membership.payment_code;
+    END IF;
 
     RETURN jsonb_build_object(
         'role', v_membership.role,

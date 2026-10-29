@@ -86,6 +86,10 @@ export default function KategoriPage() {
   async function handleAddCategory(e: React.FormEvent) {
     e.preventDefault();
     if (!newName.trim()) return;
+    if (newName.trim().length > 30) {
+      toast.error("Nama kategori maksimal 30 karakter");
+      return;
+    }
 
     try {
       setSaving(true);
@@ -119,6 +123,10 @@ export default function KategoriPage() {
 
   async function handleUpdateName(id: string) {
     if (!editName.trim()) return;
+    if (editName.trim().length > 30) {
+      toast.error("Nama kategori maksimal 30 karakter");
+      return;
+    }
 
     try {
       setSaving(true);
@@ -174,18 +182,27 @@ export default function KategoriPage() {
     try {
       setSaving(true);
       // Tukar sort_order
-      await Promise.all([
+      const newCurrentSort = targetCat.sort_order === currentCat.sort_order
+        ? (direction === "up" ? currentCat.sort_order - 1 : currentCat.sort_order + 1)
+        : targetCat.sort_order;
+      const newTargetSort = currentCat.sort_order;
+
+      const [res1, res2] = await Promise.all([
         supabase
           .from("categories")
-          .update({ sort_order: targetCat.sort_order })
+          .update({ sort_order: newCurrentSort })
           .eq("id", currentCat.id),
         supabase
           .from("categories")
-          .update({ sort_order: currentCat.sort_order })
+          .update({ sort_order: newTargetSort })
           .eq("id", targetCat.id),
       ]);
 
-      loadCategories();
+      if (res1.error || res2.error) {
+        throw new Error(res1.error?.message || res2.error?.message || "Gagal mengubah urutan kategori");
+      }
+
+      await loadCategories();
     } catch (err: unknown) {
       toast.error("Gagal mengubah urutan kategori");
     } finally {
@@ -228,7 +245,7 @@ export default function KategoriPage() {
                   placeholder="Misal: Fashion Wanita, Elektronik, Skincare"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  maxLength={50}
+                  maxLength={30}
                   autoFocus
                   required
                   className="bg-white"
@@ -296,7 +313,7 @@ export default function KategoriPage() {
                     <Input
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
-                      maxLength={50}
+                      maxLength={30}
                       autoFocus
                     />
                     <Button

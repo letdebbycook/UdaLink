@@ -1,20 +1,49 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 export default function AturUlangPasswordPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [verifyingSession, setVerifyingSession] = useState(true);
+  const [hasValidSession, setHasValidSession] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    async function verifyAuth() {
+      try {
+        const code = searchParams.get("code");
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (!error) {
+            setHasValidSession(true);
+            setVerifyingSession(false);
+            return;
+          }
+        }
+
+        const { data: { session } } = await supabase.auth.getSession();
+        setHasValidSession(Boolean(session));
+      } catch (err) {
+        console.error("Gagal memeriksa sesi reset kata sandi:", err);
+        setHasValidSession(false);
+      } finally {
+        setVerifyingSession(false);
+      }
+    }
+
+    verifyAuth();
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +76,41 @@ export default function AturUlangPasswordPage() {
       setLoading(false);
     }
   };
+
+  if (verifyingSession) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 space-y-3">
+        <Loader2 className="h-8 w-8 animate-spin text-[#16A34A]" />
+        <p className="text-xs text-slate-500">Memverifikasi tautan keamanan...</p>
+      </div>
+    );
+  }
+
+  if (!hasValidSession && !success) {
+    return (
+      <div className="space-y-6 text-center py-4">
+        <div className="h-12 w-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center mx-auto">
+          <AlertCircle className="h-6 w-6" />
+        </div>
+        <div className="space-y-1">
+          <h1 className="text-lg font-bold text-[#0F172A]">Tautan Tidak Valid atau Kedaluwarsa</h1>
+          <p className="text-xs text-[#64748B] max-w-sm mx-auto">
+            Sesi pemulihan kata sandi tidak ditemukan atau tautan ini telah kedaluwarsa. Silakan ajukan tautan baru.
+          </p>
+        </div>
+        <div className="space-y-2 pt-2">
+          <Button onClick={() => router.push("/lupa-password")} className="w-full text-xs">
+            Minta Tautan Baru
+          </Button>
+          <div>
+            <Link href="/masuk" className="text-xs text-slate-500 hover:text-slate-800">
+              Kembali ke Halaman Masuk
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -98,10 +98,10 @@ BEGIN
         v_show_branding := false;
     ELSE
         -- Akun gratis: jika memilih tema selain 3 tema dasar, otomatis reset ke 'hijau'
-        IF v_user.theme IN ('pink-pastel', 'biru-laut', 'oranye-hangat', 'ungu-malam', 'krem-minimalis') THEN
-            v_effective_theme := 'hijau';
+        IF v_user.theme IN ('hijau', 'putih', 'gelap', 'monokrom') THEN
+            v_effective_theme := v_user.theme;
         ELSE
-            v_effective_theme := COALESCE(v_user.theme, 'hijau');
+            v_effective_theme := 'hijau';
         END IF;
         v_show_branding := true;
     END IF;

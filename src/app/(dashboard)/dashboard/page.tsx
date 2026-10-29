@@ -24,6 +24,7 @@ export default function DashboardOverviewPage() {
   const [siteUrl, setSiteUrl] = useState("");
 
   const [profileComplete, setProfileComplete] = useState(false);
+  const [hasSocialOrCopied, setHasSocialOrCopied] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -34,10 +35,10 @@ export default function DashboardOverviewPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Ambil username dari profil
+      // Ambil username dan info profil
       const { data: profile } = await supabase
         .from("profiles")
-        .select("username, display_name, avatar_url, bio")
+        .select("username, display_name, avatar_url, bio, instagram, tiktok, youtube, whatsapp")
         .eq("id", user.id)
         .single();
 
@@ -46,6 +47,9 @@ export default function DashboardOverviewPage() {
         setDisplayName(profile.display_name);
         // Profile dianggap lengkap jika ada foto DAN bio
         setProfileComplete(!!(profile.avatar_url && profile.bio?.trim()));
+        const hasSocial = Boolean(profile.instagram || profile.tiktok || profile.youtube || profile.whatsapp);
+        const hasCopiedBefore = typeof window !== "undefined" && localStorage.getItem("udalink_shared_bio") === "true";
+        setHasSocialOrCopied(hasSocial || hasCopiedBefore);
       }
 
       // Ambil plan dan stats secara paralel
@@ -71,6 +75,10 @@ export default function DashboardOverviewPage() {
   const handleCopy = () => {
     if (!etalaseUrl) return;
     navigator.clipboard.writeText(etalaseUrl);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("udalink_shared_bio", "true");
+    }
+    setHasSocialOrCopied(true);
     toast.success("Link etalase disalin!");
   };
 
@@ -82,7 +90,7 @@ export default function DashboardOverviewPage() {
   const checklist = [
     { label: "Lengkapi foto profil dan bio etalase", done: profileComplete },
     { label: "Tambahkan produk affiliate pertamamu", done: (plan?.product_count ?? 0) > 0 },
-    { label: "Pasang link etalase di bio media sosialmu", done: false },
+    { label: "Pasang link etalase di bio media sosialmu", done: hasSocialOrCopied },
   ];
 
   if (loading) {

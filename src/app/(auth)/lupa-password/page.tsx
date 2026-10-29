@@ -18,7 +18,7 @@ export default function LupaPasswordPage() {
     setLoading(true);
 
     try {
-      const redirectUrl = `${window.location.origin}/atur-ulang-password`;
+      const redirectUrl = `${window.location.origin}/auth/callback?next=/atur-ulang-password`;
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: redirectUrl,
       });

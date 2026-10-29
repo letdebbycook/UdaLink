@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { getSiteDomain } from "@/lib/utils";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import Link from "next/link";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
@@ -109,8 +110,8 @@ export default function AkunPage() {
       toast.error("Username ini dipesan oleh sistem dan tidak dapat digunakan.");
       return;
     }
-    if (isUsernameAvailable === false) {
-      toast.error("Username sudah digunakan oleh akun lain. Silakan pilih username lain.");
+    if (isUsernameAvailable !== true) {
+      toast.error("Username belum diverifikasi atau tidak tersedia.");
       return;
     }
 
@@ -279,7 +280,7 @@ export default function AkunPage() {
             </label>
             <div className="flex items-center rounded-xl border border-[#E2E8F0] overflow-hidden focus-within:ring-2 focus-within:ring-[#16A34A]/20 focus-within:border-[#16A34A] transition-all bg-white">
               <span className="bg-slate-50 border-r border-[#E2E8F0] px-3.5 py-2 text-xs font-mono text-slate-500 select-none">
-                udalink.vercel.app/
+                {typeof window !== "undefined" ? window.location.host : getSiteDomain()}/
               </span>
               <Input
                 type="text"
@@ -316,10 +317,11 @@ export default function AkunPage() {
             className="w-full sm:w-auto h-10 text-sm font-semibold gap-2"
             disabled={
               loadingUsername ||
+              checkingUsername ||
               cleanUsername === currentUsername ||
               !isValidUsernameFormat ||
               isReservedUsername ||
-              isUsernameAvailable === false
+              isUsernameAvailable !== true
             }
           >
             {loadingUsername ? (
@@ -397,15 +399,15 @@ export default function AkunPage() {
             <Input
               type="email"
               required
-              maxLength={50}
+              maxLength={100}
               placeholder="email-baru@contoh.com"
               value={email}
               onChange={(e) => setEmail(e.target.value.replace(/\s+/g, ""))}
             />
             <div className="flex justify-between items-center text-[11px] text-slate-400 mt-1">
-              <span>Format: nama@domain.com (maks. 50 karakter, tanpa spasi)</span>
-              <span className={email.length >= 50 ? "text-amber-600 font-semibold" : ""}>
-                {email.length}/50
+              <span>Format: nama@domain.com (maks. 100 karakter, tanpa spasi)</span>
+              <span className={email.length >= 100 ? "text-amber-600 font-semibold" : ""}>
+                {email.length}/100
               </span>
             </div>
           </div>

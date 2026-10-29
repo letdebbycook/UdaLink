@@ -94,7 +94,6 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.submit_payment(TEXT, TEXT, TEXT, TEXT) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.submit_payment(TEXT, TEXT, TEXT) TO authenticated;
 
 
 -- 2. FUNGSI admin_review_payment

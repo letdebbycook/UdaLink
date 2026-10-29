@@ -243,10 +243,10 @@ BEGIN
     IF v_is_pro THEN
         v_effective_theme := COALESCE(v_theme, 'hijau');
     ELSE
-        IF v_theme IN ('pink-pastel', 'biru-laut', 'oranye-hangat', 'ungu-malam', 'krem-minimalis') THEN
-            v_effective_theme := 'hijau';
+        IF v_theme IN ('hijau', 'putih', 'gelap', 'monokrom') THEN
+            v_effective_theme := v_theme;
         ELSE
-            v_effective_theme := COALESCE(v_theme, 'hijau');
+            v_effective_theme := 'hijau';
         END IF;
     END IF;
 

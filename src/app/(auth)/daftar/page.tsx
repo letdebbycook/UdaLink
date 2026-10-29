@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { getSiteDomain } from "@/lib/utils";
 
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 
@@ -232,7 +233,7 @@ export default function DaftarPage() {
               </label>
               <div className="relative">
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#94A3B8] font-mono">
-                  udalink.vercel.app/
+                  {typeof window !== "undefined" ? window.location.host : getSiteDomain()}/
                 </span>
                 <Input
                   type="text"

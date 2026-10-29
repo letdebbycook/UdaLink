@@ -1,16 +1,33 @@
+import { cache } from "react";
+import { createClient } from "@supabase/supabase-js";
 import { PublicPageData, dummyPublicPage } from "@/lib/dummy-data";
-import { supabase } from "@/lib/supabase";
 import type { PublicPageResponse } from "@/types/database";
 
+function getServerSupabase() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  const supabaseAnonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    "";
+
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
+
 /**
- * Data access layer untuk halaman etalase publik.
- * Memanggil RPC Supabase get_public_page(p_username).
+ * Data access layer untuk halaman etalase publik (Server Component & Metadata).
+ * Memanggil RPC Supabase get_public_page(p_username) dengan React cache() deduplication.
  */
-export async function getPublicPage(username: string): Promise<PublicPageData | null> {
+export const getPublicPage = cache(async (username: string): Promise<PublicPageData | null> => {
   const cleanUsername = username.toLowerCase().trim();
   if (!cleanUsername) return null;
 
   try {
+    const supabase = getServerSupabase();
     const { data, error } = await supabase.rpc("get_public_page", {
       p_username: cleanUsername,
     });
@@ -64,10 +81,10 @@ export async function getPublicPage(username: string): Promise<PublicPageData | 
     console.error("Kesalahan fetch getPublicPage:", err);
   }
 
-  // Fallback ke data contoh jika akun demo "nando" belum ada di database
-  if (cleanUsername === "nando") {
+  // Fallback ke data contoh jika akun demo "nando" belum ada di database (hanya saat development)
+  if (process.env.NODE_ENV === "development" && cleanUsername === "nando") {
     return dummyPublicPage;
   }
 
   return null;
-}
+});

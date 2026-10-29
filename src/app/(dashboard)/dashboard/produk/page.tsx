@@ -197,6 +197,7 @@ export default function ProdukPage() {
       const croppedFile = new File([blob], "product-crop.webp", { type: "image/webp" });
       setImageFile(croppedFile);
       setImagePreview(dataUrl);
+      setRawSelectedFile(croppedFile);
     } catch {
       toast.error("Gagal memproses hasil crop");
     } finally {

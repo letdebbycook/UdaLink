@@ -47,7 +47,7 @@ export async function compressImage(
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
-        const targetSquareSize = options.maxWidth || 1080;
+        const targetSquareSize = options.maxWidth || options.maxHeight || 1080;
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
 
@@ -120,25 +120,34 @@ export async function compressImage(
         }
 
         // Export WebP jika didukung, fallback ke JPEG
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) {
-              reject(new Error("Gagal mengompresi gambar"));
-              return;
-            }
+        const tryExport = (mimeType: "image/webp" | "image/jpeg", extension: string) => {
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                if (mimeType === "image/webp") {
+                  // Fallback otomatis ke JPEG jika browser tidak menghasilkan blob WebP
+                  tryExport("image/jpeg", ".jpg");
+                  return;
+                }
+                reject(new Error("Gagal mengompresi gambar"));
+                return;
+              }
 
-            const cleanFileName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
-            const compressedFile = new File([blob], cleanFileName, {
-              type: "image/webp",
-              lastModified: Date.now(),
-            });
+              const cleanFileName = file.name.replace(/\.[^/.]+$/, "") + extension;
+              const compressedFile = new File([blob], cleanFileName, {
+                type: mimeType,
+                lastModified: Date.now(),
+              });
 
-            const dataUrl = canvas.toDataURL("image/webp", options.quality || 0.85);
-            resolve({ file: compressedFile, dataUrl });
-          },
-          "image/webp",
-          options.quality || 0.85
-        );
+              const dataUrl = canvas.toDataURL(mimeType, options.quality || 0.85);
+              resolve({ file: compressedFile, dataUrl });
+            },
+            mimeType,
+            options.quality || 0.85
+          );
+        };
+
+        tryExport("image/webp", ".webp");
       };
 
       img.onerror = () => reject(new Error("Format file gambar tidak valid"));

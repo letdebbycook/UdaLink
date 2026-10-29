@@ -63,7 +63,7 @@ export default function LanggananPage() {
   const isYearly = billingCycle === "yearly";
   const activeBasePrice = isYearly ? yearlyPrice : monthlyPrice;
   const activeDurationDays = isYearly ? 365 : (plan?.pro_duration_days ?? 30);
-  const paymentCode = plan?.payment_code ?? 123;
+  const paymentCode = plan?.payment_code ?? 0;
   const totalTransfer = activeBasePrice + paymentCode;
   const isPro = plan?.is_pro ?? false;
 
@@ -117,6 +117,10 @@ export default function LanggananPage() {
 
   async function handleSubmitPayment(e: React.FormEvent) {
     e.preventDefault();
+    if (!plan || !plan.payment_code) {
+      toast.error("Data paket langganan belum termuat. Silakan muat ulang halaman.");
+      return;
+    }
     if (!senderName.trim() || !proofFile) {
       toast.error("Nama pengirim dan bukti transfer wajib diisi");
       return;
@@ -338,7 +342,7 @@ export default function LanggananPage() {
                   </p>
                 ) : (
                   <p className="text-[11px] text-slate-500 mt-0.5">
-                    Rp 29.000 per 30 hari. Bebas perpanjang kapan saja.
+                    {formatRupiah(activeBasePrice)} per {activeDurationDays} hari. Bebas perpanjang kapan saja.
                   </p>
                 )}
               </div>
@@ -424,7 +428,6 @@ export default function LanggananPage() {
                       type="button"
                       onClick={() => {
                         setSelectedMethodId(m.id);
-                        setSenderBank(m.bank_name);
                       }}
                       className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                         isSelected

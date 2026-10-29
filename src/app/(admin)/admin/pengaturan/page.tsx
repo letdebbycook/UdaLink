@@ -130,6 +130,12 @@ export default function AdminPengaturanPage() {
 
     const primaryMethod = activeMethods[0] || paymentMethods[0];
 
+    let cleanedWa = adminWhatsapp.trim().replace(/^0/, "62").replace(/[^0-9]/g, "");
+    if (!cleanedWa || !/^62[0-9]{8,15}$/.test(cleanedWa)) {
+      toast.error("Nomor WhatsApp Admin wajib diisi dengan format valid diawali 62 (contoh: 628123456789)");
+      return;
+    }
+
     setSaving(true);
     try {
       const { error } = await supabase
@@ -141,7 +147,7 @@ export default function AdminPengaturanPage() {
           bank_name: primaryMethod.bank_name.trim(),
           bank_account_number: primaryMethod.account_number.trim(),
           bank_account_name: primaryMethod.account_name.trim(),
-          admin_whatsapp: adminWhatsapp.trim(),
+          admin_whatsapp: cleanedWa,
           payment_methods: paymentMethods,
           updated_at: new Date().toISOString(),
         })
