@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { ArrowRight, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-export default function AturUlangPasswordPage() {
+function AturUlangPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [newPassword, setNewPassword] = useState("");
@@ -200,3 +200,19 @@ export default function AturUlangPasswordPage() {
     </div>
   );
 }
+
+export default function AturUlangPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center py-12 space-y-3">
+          <Loader2 className="h-8 w-8 animate-spin text-[#16A34A]" />
+          <p className="text-xs text-slate-500">Memuat...</p>
+        </div>
+      }
+    >
+      <AturUlangPasswordContent />
+    </Suspense>
+  );
+}
+
