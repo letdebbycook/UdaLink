@@ -31,6 +31,9 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  experimental: {
+    agentUpgrade: "security",
+  },
   poweredByHeader: false,
   turbopack: {
     rules: {
