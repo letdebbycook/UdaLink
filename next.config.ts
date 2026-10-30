@@ -29,6 +29,29 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "*.shopee.co.id",
       },
+      {
+        protocol: "https",
+        hostname: "*.susercontent.com",
+      },
+      // Tokopedia CDN
+      {
+        protocol: "https",
+        hostname: "*.tokopedia.net",
+      },
+      // Lazada CDN
+      {
+        protocol: "https",
+        hostname: "*.alicdn.com",
+      },
+      // TikTok CDN
+      {
+        protocol: "https",
+        hostname: "*.tiktokcdn.com",
+      },
+      {
+        protocol: "https",
+        hostname: "*.byteoversea.com",
+      },
     ],
   },
   experimental: {
