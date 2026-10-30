@@ -19,41 +19,9 @@ import { PublicPageData, ProductData } from "@/lib/dummy-data";
 import { getTheme } from "@/lib/themes";
 import { formatRupiah } from "@/lib/utils";
 import { toast } from "sonner";
+import { ProductImageSlider } from "@/components/showcase/ProductImageSlider";
 
-function SafeProductImage({
-  src,
-  alt,
-  fill,
-  sizes,
-  className,
-}: {
-  src: string | null | undefined;
-  alt: string;
-  fill?: boolean;
-  sizes?: string;
-  className?: string;
-}) {
-  const [hasError, setHasError] = useState(false);
 
-  if (hasError || !src) {
-    return (
-      <div className="h-full w-full flex items-center justify-center text-slate-300">
-        <ShoppingBag className="h-7 w-7" />
-      </div>
-    );
-  }
-
-  return (
-    <Image
-      src={src}
-      alt={alt}
-      fill={fill}
-      sizes={sizes}
-      className={className}
-      onError={() => setHasError(true)}
-    />
-  );
-}
 
 interface ShowcaseViewProps {
   initialData: PublicPageData;
@@ -583,21 +551,23 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                 >
                   <div>
                     <div className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 mb-2">
-                      <span
-                        className="absolute top-1.5 left-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-md z-10 shadow-xs"
-                        style={{
-                          backgroundColor: theme.badgeBg,
-                          color: theme.badgeText,
-                        }}
-                      >
-                        #{prod.number}
-                      </span>
-                      <SafeProductImage
-                        src={prod.image_url}
+                      <ProductImageSlider
+                        images={Array.isArray(prod.images) && prod.images.length > 0 ? prod.images : (prod.image_url ? [prod.image_url] : [])}
                         alt={prod.name}
-                        fill
                         sizes="140px"
+                        aspectClassName="relative w-full h-full overflow-hidden"
                         className="object-contain p-0.5"
+                        badge={
+                          <span
+                            className="absolute top-1.5 left-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-md z-10 shadow-xs"
+                            style={{
+                              backgroundColor: theme.badgeBg,
+                              color: theme.badgeText,
+                            }}
+                          >
+                            #{prod.number}
+                          </span>
+                        }
                       />
                     </div>
                     <p
@@ -704,32 +674,35 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                     }}
                   >
                     <div>
-                      {/* Foto Rasio 1:1 + Badge Nomor */}
+                      {/* Foto Rasio 1:1 + Badge Nomor + Slider */}
                       <div className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 mb-2">
-                        <span
-                          className={`absolute top-2 left-2 text-[10px] font-extrabold px-2 py-0.5 rounded-md z-10 shadow-xs ${
-                            isExactMatched ? "bg-[#16A34A] text-white ring-2 ring-white" : ""
-                          }`}
-                          style={{
-                            backgroundColor: isExactMatched ? "#16A34A" : theme.badgeBg,
-                            color: isExactMatched ? "#FFFFFF" : theme.badgeText,
-                          }}
-                        >
-                          #{prod.number}
-                        </span>
-
-                        {isExactMatched && (
-                          <span className="absolute bottom-2 left-2 right-2 bg-[#16A34A] text-white text-[9px] font-bold py-0.5 rounded text-center shadow-xs">
-                            Nomor Persis ★
-                          </span>
-                        )}
-
-                        <SafeProductImage
-                          src={prod.image_url}
+                        <ProductImageSlider
+                          images={Array.isArray(prod.images) && prod.images.length > 0 ? prod.images : (prod.image_url ? [prod.image_url] : [])}
                           alt={prod.name}
-                          fill
                           sizes="(max-width: 480px) 50vw, 240px"
+                          aspectClassName="relative w-full h-full overflow-hidden"
                           className="object-contain p-0.5 hover:scale-105 transition-transform duration-200"
+                          badge={
+                            <>
+                              <span
+                                className={`absolute top-2 left-2 text-[10px] font-extrabold px-2 py-0.5 rounded-md z-10 shadow-xs ${
+                                  isExactMatched ? "bg-[#16A34A] text-white ring-2 ring-white" : ""
+                                }`}
+                                style={{
+                                  backgroundColor: isExactMatched ? "#16A34A" : theme.badgeBg,
+                                  color: isExactMatched ? "#FFFFFF" : theme.badgeText,
+                                }}
+                              >
+                                #{prod.number}
+                              </span>
+
+                              {isExactMatched && (
+                                <span className="absolute bottom-2 left-2 right-2 z-10 bg-[#16A34A] text-white text-[9px] font-bold py-0.5 rounded text-center shadow-xs">
+                                  Nomor Persis ★
+                                </span>
+                              )}
+                            </>
+                          }
                         />
                       </div>
 

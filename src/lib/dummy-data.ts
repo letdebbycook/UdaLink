@@ -24,6 +24,7 @@ export interface ProductData {
   name: string;
   price: number | null;
   image_url: string | null;
+  images?: string[] | null;
   affiliate_url: string;
   marketplace: "shopee" | "tiktok" | "tokopedia" | "lazada" | "lainnya";
   category_id: string | null;

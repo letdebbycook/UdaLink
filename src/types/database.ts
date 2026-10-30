@@ -45,6 +45,7 @@ export interface Product {
   name: string;
   price: number | null;
   image_url: string | null;
+  images?: string[] | null;
   affiliate_url: string;
   marketplace: MarketplaceType;
   category_id: string | null;
@@ -141,6 +142,7 @@ export interface PublicPageResponse {
     name: string;
     price: number | null;
     image_url: string | null;
+    images?: string[] | null;
     marketplace: MarketplaceType;
     category_id: string | null;
   }>;
@@ -150,6 +152,7 @@ export interface PublicPageResponse {
     name: string;
     price: number | null;
     image_url: string | null;
+    images?: string[] | null;
     marketplace: MarketplaceType;
     category_id: string | null;
     is_featured: boolean;
