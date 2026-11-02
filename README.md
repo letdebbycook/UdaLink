@@ -162,24 +162,6 @@ Buka **Supabase Dashboard → SQL Editor**, lalu jalankan file skrip berikut sec
 5. **[supabase/seed-dev.sql](supabase/seed-dev.sql)** *(Opsional - Data Uji Coba)*:
    Membuat profil affiliator demo `@nando` lengkap dengan 4 kategori, 12 produk dummy (#1 s/d #12), dan 2 banner promo.
 
----
-
-## 🔑 Kredensial Uji Coba (Development)
-
-Jika Anda telah menjalankan skrip seeding `seed-dev.sql`:
-
-### 1. Akun Affiliator Demo (Pro)
-- **Halaman Etalase Publik**: `http://localhost:3000/nando`
-- **Email**: `nando@udalink.id`
-- **Password**: `nando123`
-- **Dashboard**: `http://localhost:3000/dashboard`
-
-### 2. Akun Administrator
-- **Email**: `admin@gmail.com` *(atau `admin@udalink.id`)*
-- **Password**: `AdminUdaLink1!`
-- **Panel Admin**: `http://localhost:3000/admin`
-
-*(Untuk membuat admin baru, login menggunakan akun di atas lalu buka menu **Kelola Pengguna → Tambah Admin**).*
 
 ---
 
