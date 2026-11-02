@@ -570,7 +570,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                         className="object-contain p-0.5"
                         badge={
                           <span
-                            className="absolute top-1.5 left-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-md z-10 shadow-xs"
+                            className="absolute top-1.5 left-1.5 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md z-10 shadow-xs"
                             style={{
                               backgroundColor: theme.badgeBg,
                               color: theme.badgeText,
@@ -601,7 +601,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                       rel="noreferrer"
                       className={`mt-1.5 w-full py-1.5 ${
                         theme.buttonRadius || "rounded-lg"
-                      } text-[10px] font-bold flex items-center justify-center gap-1 transition-all`}
+                      } text-xs min-h-[34px] font-bold flex items-center justify-center gap-1 transition-all shadow-2xs`}
                       style={{
                         backgroundColor: theme.button,
                         color: theme.buttonText,
@@ -708,7 +708,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                               </span>
 
                               {isExactMatched && (
-                                <span className="absolute bottom-2 left-2 right-2 z-10 bg-[#16A34A] text-white text-[9px] font-bold py-0.5 rounded text-center shadow-xs">
+                                <span className="absolute bottom-2 left-2 right-2 z-10 bg-[#16A34A] text-white text-[10px] font-bold py-0.5 rounded text-center shadow-xs">
                                   Nomor Persis ★
                                 </span>
                               )}

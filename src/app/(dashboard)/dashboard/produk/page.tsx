@@ -794,22 +794,26 @@ export default function ProdukPage() {
 
       {/* Modal Tambah / Edit Produk */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 border border-slate-200 shadow-xl my-8">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-              <h2 className="text-lg font-bold text-[#0F172A] flex items-center gap-2">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col border border-slate-200 shadow-2xl overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-150">
+            {/* Header Sticky */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-white shrink-0">
+              <h2 className="text-base sm:text-lg font-bold text-[#0F172A] flex items-center gap-2">
                 <Package className="w-5 h-5 text-[#16A34A]" />
                 {editingProduct ? `Edit Produk #${editingProduct.number}` : "Tambah Produk Baru"}
               </h2>
               <button
+                type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 text-sm font-semibold"
+                className="w-8 h-8 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center text-sm font-semibold transition-colors"
+                aria-label="Tutup modal"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleSaveProduct} className="space-y-4 pt-4">
+            <form onSubmit={handleSaveProduct} className="flex flex-col flex-1 overflow-hidden">
+              <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
               {/* Galeri Multi-Foto Produk (Maks 5 Gambar, Rasio 1:1) */}
               <MultiImageManager
                 images={formImages}
@@ -962,20 +966,23 @@ export default function ProdukPage() {
                 />
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
+              </div>
+
+              {/* Action Buttons (Sticky Footer pada layar mobile & desktop) */}
+              <div className="flex items-center justify-end gap-2.5 px-5 py-3.5 border-t border-slate-100 bg-slate-50/80 backdrop-blur-xs shrink-0">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setIsModalOpen(false)}
                   disabled={saving}
+                  className="h-10 px-4 text-xs font-semibold text-slate-600 hover:bg-slate-100"
                 >
                   Batal
                 </Button>
                 <Button
                   type="submit"
                   disabled={saving}
-                  className="bg-[#16A34A] hover:bg-[#15803D] text-white gap-2"
+                  className="bg-[#16A34A] hover:bg-[#15803D] text-white gap-2 h-10 px-5 text-xs font-bold shadow-xs active:scale-[0.98]"
                 >
                   {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                   {editingProduct ? "Simpan Perubahan" : "Tambahkan Produk"}
