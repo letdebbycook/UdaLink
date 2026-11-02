@@ -123,3 +123,4 @@ export function detectPlatform(options: {
 
   return "direct";
 }
+
