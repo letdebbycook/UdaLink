@@ -172,6 +172,11 @@ export interface MyStatsResponse {
     image_url: string | null;
     click_count: number;
   }>;
+  platform_stats?: Array<{
+    platform: string;
+    click_count: number;
+    percentage: number;
+  }>;
 }
 
 export interface MyPlanResponse {

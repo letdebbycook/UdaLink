@@ -34,6 +34,17 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [copiedLink, setCopiedLink] = useState(false);
+  const [refParam, setRefParam] = useState<string>("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      const ref = sp.get("ref") || sp.get("source") || sp.get("utm_source") || sp.get("platform") || "";
+      if (ref) {
+        setRefParam(ref);
+      }
+    }
+  }, []);
 
   // Banner Carousel State
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
@@ -585,7 +596,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                       {formatRupiah(prod.price)}
                     </p>
                     <a
-                      href={`/go/${prod.id}`}
+                      href={refParam ? `/go/${prod.id}?ref=${encodeURIComponent(refParam)}` : `/go/${prod.id}`}
                       target="_blank"
                       rel="noreferrer"
                       className={`mt-1.5 w-full py-1.5 ${
@@ -728,7 +739,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
 
                       {/* Tombol Beli */}
                       <a
-                        href={`/go/${prod.id}`}
+                        href={refParam ? `/go/${prod.id}?ref=${encodeURIComponent(refParam)}` : `/go/${prod.id}`}
                         target="_blank"
                         rel="noreferrer"
                         className={`w-full h-10 ${

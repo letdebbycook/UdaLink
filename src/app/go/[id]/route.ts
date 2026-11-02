@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { detectPlatform } from "@/lib/platform";
 
 function getServerSupabase() {
   const key =
@@ -49,13 +50,30 @@ export async function GET(
     isNewSession = true;
   }
 
+  // Deteksi Platform: 1. Query Param ?ref= atau ?source= atau ?platform=, 2. Referrer, 3. User-Agent
+  const searchParams = request.nextUrl.searchParams;
+  const refParam =
+    searchParams.get("ref") ||
+    searchParams.get("source") ||
+    searchParams.get("utm_source") ||
+    searchParams.get("platform");
+  const referrer = request.headers.get("referer");
+  const userAgent = request.headers.get("user-agent");
+
+  const platform = detectPlatform({
+    refParam,
+    referrer,
+    userAgent,
+  });
+
   let targetUrl: string | null = null;
 
-  // Catat klik via RPC record_click (di sisi server, dengan proteksi deduplikasi)
+  // Catat klik via RPC record_click (di sisi server, dengan proteksi deduplikasi & tracking platform)
   try {
     const { data: rpcData, error: rpcErr } = await supabase.rpc("record_click", {
       p_product_id: id,
       p_session_id: sessionId,
+      p_platform: platform,
     });
 
     if (rpcData && typeof rpcData === "object" && "affiliate_url" in rpcData) {

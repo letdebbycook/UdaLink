@@ -4,8 +4,9 @@ import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import {
   BarChart2, MousePointerClick, TrendingUp, Sparkles,
-  Lock, Calendar, Package, ExternalLink, Loader2
+  Lock, Calendar, Package, ExternalLink, Loader2, Globe, Compass
 } from "lucide-react";
+import { PLATFORM_CONFIG } from "@/lib/platform";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -54,6 +55,7 @@ export default function StatistikPage() {
 
   const totalClicks = stats?.total_clicks ?? 0;
   const productsStats = stats?.products_stats ?? [];
+  const platformStats = stats?.platform_stats ?? [];
   const topProduct = productsStats.length > 0 ? productsStats[0] : null;
   const avgDaily = Math.round((totalClicks / days) * 10) / 10;
 
@@ -289,6 +291,103 @@ export default function StatistikPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Platform Tracking / Sumber Pengunjung */}
+      <Card className="border-[#E2E8F0] bg-white">
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+            <div>
+              <div className="flex items-center gap-2">
+                <Compass className="w-5 h-5 text-emerald-600" />
+                <h3 className="font-bold text-base text-[#0F172A]">
+                  Sumber Platform Pengunjung
+                </h3>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Ketahui platform media sosial mana yang paling banyak menghasilkan klik ke etalasemu
+              </p>
+            </div>
+            <Badge variant="outline" className="text-xs">
+              {platformStats.length} platform terdeteksi
+            </Badge>
+          </div>
+
+          {loading ? (
+            <div className="flex flex-col items-center justify-center p-8 text-[#64748B]">
+              <Loader2 className="w-6 h-6 animate-spin text-[#16A34A] mb-2" />
+              <p className="text-xs">Menganalisis sumber trafik...</p>
+            </div>
+          ) : platformStats.length === 0 ? (
+            <div className="text-center py-8 text-slate-500">
+              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-2.5">
+                <Globe className="w-5 h-5 text-slate-400" />
+              </div>
+              <p className="font-semibold text-xs text-slate-800">Belum Ada Data Platform</p>
+              <p className="text-[11px] text-slate-500 max-w-sm mx-auto mt-1">
+                Data asal platform pengunjung (Instagram, TikTok, WhatsApp, dll) akan otomatis tercatat saat pengunjung mengklik produk.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Visual Multi-Segment Bar */}
+              <div className="h-3.5 w-full rounded-full bg-slate-100 overflow-hidden flex shadow-inner">
+                {platformStats.map((item) => {
+                  const pConfig = PLATFORM_CONFIG[item.platform.toLowerCase()] || PLATFORM_CONFIG.lainnya;
+                  return (
+                    <div
+                      key={item.platform}
+                      style={{
+                        width: `${item.percentage}%`,
+                        backgroundColor: pConfig.dotColor,
+                      }}
+                      title={`${pConfig.label}: ${item.click_count} klik (${item.percentage}%)`}
+                      className="h-full transition-all duration-500 first:rounded-l-full last:rounded-r-full hover:opacity-85"
+                    />
+                  );
+                })}
+              </div>
+
+              {/* Grid Cards Breakdown */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 pt-2">
+                {platformStats.map((item) => {
+                  const pConfig = PLATFORM_CONFIG[item.platform.toLowerCase()] || PLATFORM_CONFIG.lainnya;
+                  return (
+                    <div
+                      key={item.platform}
+                      className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/60 hover:bg-slate-50 transition-colors flex flex-col justify-between"
+                    >
+                      <div className="flex items-center justify-between gap-1 mb-2">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: pConfig.dotColor }}
+                          />
+                          <span className="text-xs font-bold text-slate-800 truncate">
+                            {pConfig.label}
+                          </span>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={`text-[9px] px-1.5 py-0 font-bold shrink-0 ${pConfig.badgeClass}`}
+                        >
+                          {item.percentage}%
+                        </Badge>
+                      </div>
+
+                      <div className="flex items-baseline justify-between pt-1 border-t border-slate-200/60">
+                        <span className="text-[10px] text-slate-400 font-medium">Total Klik</span>
+                        <span className="text-sm font-extrabold text-slate-900">
+                          {item.click_count}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Top Products Table / Breakdown */}
       <Card className="border-[#E2E8F0] bg-white">
