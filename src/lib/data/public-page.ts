@@ -59,6 +59,7 @@ export const getPublicPage = cache(async (username: string): Promise<PublicPageD
           name: p.name,
           price: p.price,
           image_url: p.image_url,
+          images: Array.isArray(p.images) && p.images.length > 0 ? p.images : (p.image_url ? [p.image_url] : []),
           affiliate_url: `/go/${p.id}`,
           marketplace: p.marketplace,
           category_id: p.category_id,
