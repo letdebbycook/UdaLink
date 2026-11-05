@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <defs>
+    <!-- Background squircle gradient (Deep Slate #0F172A to #1E293B) -->
+    <linearGradient id="bgG" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#1E293B" />
+    </linearGradient>
+
+    <!-- Main Emerald Brand Gradient (#16A34A to #22C55E) -->
+    <linearGradient id="brandG" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#22C55E" />
+      <stop offset="60%" stop-color="#16A34A" />
+      <stop offset="100%" stop-color="#15803D" />
+    </linearGradient>
+
+    <!-- Inner Shadow & Contrast Definition -->
+    <linearGradient id="accentG" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#15803D" />
+      <stop offset="100%" stop-color="#4ADE80" />
+    </linearGradient>
+  </defs>
+
+  <!-- High-contrast rounded squircle container (Perfect for both Dark & Light browser tabs) -->
+  <rect width="100" height="100" rx="24" fill="url(#bgG)" />
+
+  <!-- Subtle inner emerald border glow -->
+  <rect x="2" y="2" width="96" height="96" rx="22" fill="none" stroke="#22C55E" stroke-opacity="0.2" stroke-width="1.5" />
+
+  <!-- Geometric Modern Monogram 'U' + Inner Pointer (Link) -->
+  <g id="mark" transform="translate(0, 1)">
+    <!-- Outer U Arch -->
+    <path
+      d="M 26 28
+         C 32 30 42 34 56 34
+         L 56 61
+         L 50 67
+         L 44 61
+         L 44 42
+         L 36 42
+         L 36 63
+         C 36 71 42 76 50 76
+         C 58 76 64 71 64 63
+         L 64 28
+         C 68 34 72 54 72 63
+         C 72 76 62 84 50 84
+         C 38 84 28 76 28 63
+         L 28 32
+         C 28 30 27 29 26 28
+         Z"
+      fill="url(#brandG)"
+    />
+
+    <!-- Elegant Swirl Dot / Seed accent on top right (matches attachment) -->
+    <path
+      d="M 64.5 16
+         C 60.5 16 57.5 19 57.5 23
+         C 57.5 27 60.5 30 64.5 30
+         C 67.5 30 70.5 28 71.5 25
+         C 70.5 26 68.5 27 66.5 27
+         C 63.5 27 61.5 25 61.5 22
+         C 61.5 19 63.5 17 66.5 17
+         C 68.5 17 70.5 19 70.5 21
+         C 71.5 18 68.5 16 64.5 16
+         Z"
+      fill="url(#accentG)"
+    />
+  </g>
+</svg>

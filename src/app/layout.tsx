@@ -27,7 +27,11 @@ export const metadata: Metadata = {
     description: "Buat etalase link afiliasi kamu sekarang. Penonton cari nomor produk dari video, langsung klik dan beli.",
   },
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico" }
+    ],
+    apple: "/favicon.svg",
   },
 };
 
