@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   Copy, ExternalLink, Package, MousePointerClick,
   ShieldCheck, CheckCircle2, Circle, Loader2, TrendingUp,
+  QrCode, Check, X, Download, Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,14 +15,16 @@ import { supabase } from "@/lib/supabase";
 import type { MyPlanResponse, MyStatsResponse } from "@/types/database";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import { QrCodeSvg } from "@/components/ui/qr-code";
 
 export default function DashboardOverviewPage() {
   const [plan, setPlan] = useState<MyPlanResponse | null>(null);
   const [stats, setStats] = useState<MyStatsResponse | null>(null);
   const [username, setUsername] = useState<string>("");
-  const [displayName, setDisplayName] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [siteUrl, setSiteUrl] = useState("");
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
 
   const [profileComplete, setProfileComplete] = useState(false);
   const [hasSocialOrCopied, setHasSocialOrCopied] = useState(false);
@@ -29,13 +32,11 @@ export default function DashboardOverviewPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      // Deteksi URL dinamis (lokal atau Vercel)
       setSiteUrl(window.location.origin);
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Ambil username dan info profil
       const { data: profile } = await supabase
         .from("profiles")
         .select("username, display_name, avatar_url, bio, instagram, tiktok, youtube, whatsapp")
@@ -44,15 +45,12 @@ export default function DashboardOverviewPage() {
 
       if (profile) {
         setUsername(profile.username);
-        setDisplayName(profile.display_name);
-        // Profile dianggap lengkap jika ada foto DAN bio
         setProfileComplete(!!(profile.avatar_url && profile.bio?.trim()));
         const hasSocial = Boolean(profile.instagram || profile.tiktok || profile.youtube || profile.whatsapp);
         const hasCopiedBefore = typeof window !== "undefined" && localStorage.getItem("udalink_shared_bio") === "true";
         setHasSocialOrCopied(hasSocial || hasCopiedBefore);
       }
 
-      // Ambil plan dan stats secara paralel
       const [planRes, statsRes] = await Promise.all([
         supabase.rpc("get_my_plan"),
         supabase.rpc("get_my_stats", { p_days: 7 }),
@@ -78,8 +76,41 @@ export default function DashboardOverviewPage() {
     if (typeof window !== "undefined") {
       localStorage.setItem("udalink_shared_bio", "true");
     }
+    setCopiedLink(true);
     setHasSocialOrCopied(true);
     toast.success("Link etalase disalin!");
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  const handleDownloadQr = () => {
+    const svgElement = document.getElementById("dashboard-qr-code");
+    if (!svgElement) return;
+
+    const svgString = new XMLSerializer().serializeToString(svgElement);
+    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const URL = window.URL || window.webkitURL || window;
+    const blobURL = URL.createObjectURL(svgBlob);
+
+    const image = new window.Image();
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 600;
+      canvas.height = 600;
+      const context = canvas.getContext("2d");
+      if (!context) return;
+
+      context.fillStyle = "#FFFFFF";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 50, 50, 500, 500);
+
+      const png = canvas.toDataURL("image/png");
+      const downloadLink = document.createElement("a");
+      downloadLink.download = `QR-Etalase-${username}.png`;
+      downloadLink.href = png;
+      downloadLink.click();
+      toast.success("QR Code berhasil diunduh!");
+    };
+    image.src = blobURL;
   };
 
   const isPro = plan?.is_pro ?? false;
@@ -105,49 +136,63 @@ export default function DashboardOverviewPage() {
     <div className="space-y-6">
       {/* Title */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-[#0F172A]">Ringkasan</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-[#0F172A]">Ringkasan</h1>
         <p className="text-sm text-[#64748B]">
           Pantau performa etalase dan produk affiliate-mu di sini.
         </p>
       </div>
 
       {/* Kartu Link Etalase */}
-      <Card className="border-[#BBF7D0] bg-gradient-to-r from-[#F0FDF4] to-white">
-        <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-[#16A34A] uppercase tracking-wider">
+      <Card className="border-[#BBF7D0] bg-gradient-to-r from-[#F0FDF4] via-white to-white shadow-xs hover:shadow-md transition-shadow">
+        <CardContent className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="space-y-1.5">
+            <span className="text-xs font-bold text-[#16A34A] uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5" />
               Link Etalasemu
             </span>
-            <div className="text-base sm:text-lg font-bold font-mono break-all">
+            <div className="text-base sm:text-lg font-bold font-mono break-all text-[#0F172A]">
               {username ? (
                 <>
                   <span className="text-[#94A3B8] font-normal">{etalaseDomain}/</span>
-                  <span className="text-[#16A34A]">{username}</span>
+                  <span className="text-[#16A34A] underline decoration-emerald-200 underline-offset-4">{username}</span>
                 </>
               ) : (
                 <span className="text-[#94A3B8]">...</span>
               )}
             </div>
             <p className="text-xs text-[#64748B]">
-              Pasang link ini di bio Instagram, TikTok, dan bio YouTube-mu.
+              Pasang link ini di bio Instagram, TikTok, dan YouTube untuk konversi maksimal.
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 text-xs"
+              className="gap-1.5 text-xs h-9 font-semibold active:scale-95 transition-all"
               onClick={handleCopy}
               disabled={!etalaseUrl}
             >
-              <Copy className="h-3.5 w-3.5" />
-              <span>Salin Link</span>
+              {copiedLink ? <Check className="h-3.5 w-3.5 text-[#16A34A]" /> : <Copy className="h-3.5 w-3.5" />}
+              <span>{copiedLink ? "Tersalin!" : "Salin Link"}</span>
             </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs h-9 font-semibold active:scale-95 transition-all"
+              onClick={() => setShowQrModal(true)}
+              disabled={!etalaseUrl}
+              title="Lihat QR Code"
+            >
+              <QrCode className="h-3.5 w-3.5 text-slate-700" />
+              <span className="hidden xs:inline">QR Code</span>
+            </Button>
+
             {etalaseUrl && (
               <Link href={`/${username}`} target="_blank">
-                <Button size="sm" className="gap-1.5 text-xs">
+                <Button size="sm" className="gap-1.5 text-xs h-9 bg-[#16A34A] hover:bg-[#15803D] active:scale-95 transition-all text-white font-bold">
                   <ExternalLink className="h-3.5 w-3.5" />
-                  <span>Lihat Halaman</span>
+                  <span>Buka Etalase</span>
                 </Button>
               </Link>
             )}
@@ -158,22 +203,24 @@ export default function DashboardOverviewPage() {
       {/* 3 Kartu Statistik */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Total Produk */}
-        <Card>
+        <Card className="border-slate-200/90 shadow-xs hover:shadow-md transition-all">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-[#64748B]">Total Produk Aktif</span>
-              <Package className="h-4 w-4 text-[#16A34A]" />
+              <span className="text-xs font-bold text-[#64748B]">Total Produk Aktif</span>
+              <div className="h-8 w-8 rounded-lg bg-emerald-50 text-[#16A34A] flex items-center justify-center">
+                <Package className="h-4 w-4" />
+              </div>
             </div>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-[#0F172A]">
+              <span className="text-2xl font-black text-[#0F172A]">
                 {plan?.product_count ?? 0}
               </span>
-              <span className="text-xs text-[#64748B]">
+              <span className="text-xs text-[#64748B] font-medium">
                 / {isPro ? "Unlimited (Pro)" : `${plan?.free_product_limit ?? 30} (Gratis)`}
               </span>
             </div>
             {!isPro && plan && (
-              <div className="mt-2 h-1.5 bg-[#E2E8F0] rounded-full overflow-hidden">
+              <div className="mt-2.5 h-1.5 bg-[#E2E8F0] rounded-full overflow-hidden">
                 <div
                   className="h-full bg-[#16A34A] rounded-full transition-all"
                   style={{ width: `${Math.min(100, ((plan.product_count) / (plan.free_product_limit)) * 100)}%` }}
@@ -184,53 +231,58 @@ export default function DashboardOverviewPage() {
         </Card>
 
         {/* Klik 7 Hari */}
-        <Card>
+        <Card className="border-slate-200/90 shadow-xs hover:shadow-md transition-all">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-[#64748B]">Klik / 7 Hari Terakhir</span>
-              <MousePointerClick className="h-4 w-4 text-[#16A34A]" />
+              <span className="text-xs font-bold text-[#64748B]">Klik / 7 Hari Terakhir</span>
+              <div className="h-8 w-8 rounded-lg bg-emerald-50 text-[#16A34A] flex items-center justify-center">
+                <MousePointerClick className="h-4 w-4" />
+              </div>
             </div>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-[#0F172A]">
+              <span className="text-2xl font-black text-[#0F172A]">
                 {stats?.total_clicks?.toLocaleString("id-ID") ?? 0}
               </span>
               {(stats?.total_clicks ?? 0) > 0 && (
-                <span className="text-xs text-emerald-600 font-medium flex items-center gap-0.5">
+                <span className="text-xs text-emerald-600 font-bold flex items-center gap-0.5">
                   <TrendingUp className="h-3 w-3" />
                   klik
                 </span>
               )}
             </div>
             {!isPro && (
-              <p className="text-[10px] text-[#94A3B8] mt-1">Upgrade Pro untuk statistik lengkap</p>
+              <p className="text-[10px] text-[#94A3B8] mt-1.5">Upgrade Pro untuk analitik lengkap</p>
             )}
           </CardContent>
         </Card>
 
         {/* Status Paket */}
-        <Card>
+        <Card className="border-slate-200/90 shadow-xs hover:shadow-md transition-all">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-[#64748B]">Status Paket</span>
-              <ShieldCheck className={`h-4 w-4 ${isPro ? "text-amber-500" : "text-[#94A3B8]"}`} />
+              <span className="text-xs font-bold text-[#64748B]">Status Akun</span>
+              <div className={`h-8 w-8 rounded-lg ${isPro ? "bg-amber-50 text-amber-500" : "bg-slate-100 text-slate-400"} flex items-center justify-center`}>
+                <ShieldCheck className="h-4 w-4" />
+              </div>
             </div>
             <div className="mt-2 flex items-center gap-2">
               {isPro ? (
-                <Badge className="bg-amber-100 text-amber-800 gap-1 font-semibold">
+                <Badge className="bg-amber-100 text-amber-800 gap-1 font-bold">
                   <ShieldCheck className="h-3 w-3" />
                   PRO AKTIF
                 </Badge>
               ) : (
-                <Badge variant="outline" className="text-[#64748B]">Gratis</Badge>
+                <Badge variant="outline" className="text-[#64748B] font-semibold">Gratis</Badge>
               )}
             </div>
             {isPro && proUntilStr && (
-              <p className="text-[11px] text-[#64748B] mt-1">s.d. {proUntilStr}</p>
+              <p className="text-[11px] text-[#64748B] mt-1.5 font-medium">s.d. {proUntilStr}</p>
             )}
             {!isPro && (
               <Link href="/dashboard/langganan">
-                <p className="text-[11px] text-[#16A34A] font-semibold mt-1 hover:underline">
-                  Upgrade ke Pro →
+                <p className="text-[11px] text-[#16A34A] font-bold mt-1.5 hover:underline flex items-center gap-1">
+                  <span>Upgrade ke Pro</span>
+                  <span>→</span>
                 </p>
               </Link>
             )}
@@ -238,63 +290,76 @@ export default function DashboardOverviewPage() {
         </Card>
       </div>
 
-      {/* 5 Produk Terlaris (PRD Bagian 7 & 8) */}
-      <Card>
-        <CardContent className="p-5 space-y-3">
+      {/* 5 Produk Terlaris */}
+      <Card className="border-slate-200/90 shadow-xs">
+        <CardContent className="p-5 sm:p-6 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-sm text-[#0F172A] flex items-center gap-2">
+            <h3 className="font-bold text-sm text-[#0F172A] flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-[#16A34A]" />
-              <span>5 Produk Terlaris</span>
+              <span>5 Produk Paling Sering Diklik</span>
             </h3>
             <Link
               href="/dashboard/statistik"
-              className="text-xs text-[#16A34A] font-medium hover:underline"
+              className="text-xs text-[#16A34A] font-bold hover:underline"
             >
               Lihat Statistik Lengkap →
             </Link>
           </div>
 
           {!stats?.products_stats || stats.products_stats.length === 0 ? (
-            <div className="py-6 text-center text-xs text-[#64748B]">
+            <div className="py-8 text-center text-xs text-[#64748B]">
               Belum ada data klik produk. Pasang link etalase di bio untuk mulai memantau produk terlaris!
             </div>
           ) : (
             <div className="divide-y divide-[#E2E8F0]">
-              {stats.products_stats.slice(0, 5).map((prod) => (
-                <div key={prod.product_id} className="py-2.5 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="font-bold text-xs text-[#16A34A] w-6 shrink-0">
-                      #{prod.number}
-                    </span>
-                    <div className="w-9 h-9 rounded-lg bg-slate-100 overflow-hidden relative shrink-0 border border-slate-200">
-                      {prod.image_url ? (
-                        <img src={prod.image_url} alt={prod.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-400">
-                          <Package className="w-4 h-4" />
-                        </div>
-                      )}
+              {stats.products_stats.slice(0, 5).map((prod, index) => {
+                const rankBadges = [
+                  "bg-amber-100 text-amber-800 border-amber-300",
+                  "bg-slate-100 text-slate-700 border-slate-300",
+                  "bg-orange-100 text-orange-800 border-orange-300",
+                ];
+                const rankStyle = index < 3 ? rankBadges[index] : "bg-slate-50 text-slate-500 border-slate-200";
+
+                return (
+                  <div key={prod.product_id} className="py-3 flex items-center justify-between gap-3 group">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className={`h-6 w-6 rounded-md text-[11px] font-black flex items-center justify-center border shrink-0 ${rankStyle}`}>
+                        {index + 1}
+                      </span>
+                      <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden relative shrink-0 border border-slate-200">
+                        {prod.image_url ? (
+                          <img src={prod.image_url} alt={prod.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-slate-400">
+                            <Package className="w-4 h-4" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-[#0F172A] truncate group-hover:text-[#16A34A] transition-colors">
+                          {prod.name}
+                        </p>
+                        <p className="text-[11px] text-[#64748B]">
+                          Nomor #{prod.number} · <span className="capitalize">{prod.marketplace}</span>
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-[#0F172A] truncate">{prod.name}</p>
-                      <p className="text-[11px] text-[#64748B] capitalize">{prod.marketplace}</p>
-                    </div>
+                    <Badge variant="outline" className="text-xs font-black text-[#16A34A] bg-[#F0FDF4] border-[#BBF7D0] shrink-0">
+                      {prod.click_count} klik
+                    </Badge>
                   </div>
-                  <Badge variant="outline" className="text-xs font-bold text-[#16A34A] bg-[#F0FDF4] border-[#BBF7D0] shrink-0">
-                    {prod.click_count} klik
-                  </Badge>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Checklist Memulai (Hilang jika semua langkah selesai sesuai PRD) */}
+      {/* Checklist Memulai */}
       {!checklist.every((item) => item.done) && (
-        <Card>
-          <CardContent className="p-5 space-y-3">
-            <h3 className="font-semibold text-sm text-[#0F172A]">Checklist Memulai Etalase</h3>
+        <Card className="border-slate-200/90 shadow-xs">
+          <CardContent className="p-5 sm:p-6 space-y-3">
+            <h3 className="font-bold text-sm text-[#0F172A]">Checklist Memulai Etalase</h3>
             <div className="space-y-2.5">
               {checklist.map((item, i) => (
                 <div key={i} className="flex items-center gap-2.5">
@@ -307,7 +372,7 @@ export default function DashboardOverviewPage() {
                     className={`text-xs ${
                       item.done
                         ? "text-[#94A3B8] line-through"
-                        : "text-[#374151] font-medium"
+                        : "text-[#374151] font-semibold"
                     }`}
                   >
                     {item.label}
@@ -317,6 +382,67 @@ export default function DashboardOverviewPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* QR Code Modal for Dashboard */}
+      {showQrModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => setShowQrModal(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-3xl p-6 bg-white shadow-2xl border border-slate-200 relative text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setShowQrModal(false)}
+              className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
+              aria-label="Tutup"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="h-10 w-10 rounded-2xl bg-emerald-50 text-[#16A34A] flex items-center justify-center mx-auto mb-2">
+              <QrCode className="h-5 w-5" />
+            </div>
+            <h3 className="font-extrabold text-base text-[#0F172A]">
+              QR Code Etalasemu
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Cetak atau tampilkan di live streaming / konten video
+            </p>
+
+            <div className="my-5 p-4 rounded-2xl bg-slate-50 border border-slate-200 inline-block shadow-inner">
+              <div id="dashboard-qr-code">
+                <QrCodeSvg
+                  value={etalaseUrl}
+                  size={190}
+                  fgColor="#0F172A"
+                  bgColor="#FFFFFF"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Button
+                onClick={handleDownloadQr}
+                className="w-full bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-xs gap-1.5 h-10 shadow-xs"
+              >
+                <Download className="h-4 w-4" />
+                <span>Unduh Gambar QR (PNG)</span>
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleCopy}
+                className="w-full text-xs font-semibold h-10 gap-1.5"
+              >
+                {copiedLink ? <Check className="h-3.5 w-3.5 text-[#16A34A]" /> : <Copy className="h-3.5 w-3.5" />}
+                <span>{copiedLink ? "Tautan Disalin!" : "Salin Tautan Etalase"}</span>
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

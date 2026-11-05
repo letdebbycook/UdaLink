@@ -8,34 +8,52 @@ import {
   ExternalLink,
   MessageCircle,
   Award,
-  Star,
-  ShoppingBag,
   Share2,
   X,
   SearchX,
   Check,
+  Hash,
+  ArrowUpDown,
+  QrCode,
+  Download,
+  Copy,
+  ChevronRight,
+  Delete,
+  Sparkles,
 } from "lucide-react";
-import { PublicPageData, ProductData } from "@/lib/dummy-data";
+import { PublicPageData } from "@/lib/dummy-data";
 import { getTheme } from "@/lib/themes";
 import { formatRupiah } from "@/lib/utils";
 import { toast } from "sonner";
 import { ProductImageSlider } from "@/components/showcase/ProductImageSlider";
-
-
+import { QrCodeSvg } from "@/components/ui/qr-code";
 
 interface ShowcaseViewProps {
   initialData: PublicPageData;
 }
 
+type SortOption = "default" | "popular" | "price_asc" | "price_desc" | "newest";
+
 export function ShowcaseView({ initialData }: ShowcaseViewProps) {
   const { profile, categories, products, banners, show_branding } = initialData;
   const theme = getTheme(profile.theme);
 
+  // States
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<SortOption>("default");
   const [copiedLink, setCopiedLink] = useState(false);
   const [refParam, setRefParam] = useState<string>("");
 
+  // Numpad Quick-Search Drawer State
+  const [isNumpadOpen, setIsNumpadOpen] = useState(false);
+  const [numpadValue, setNumpadValue] = useState("");
+  const [highlightedProductId, setHighlightedProductId] = useState<string | null>(null);
+
+  // Share & QR Modal State
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+
+  // Capture URL query params for referral platform tracking
   useEffect(() => {
     if (typeof window !== "undefined") {
       const sp = new URLSearchParams(window.location.search);
@@ -59,51 +77,126 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
     return () => clearInterval(timer);
   }, [banners.length, isBannerPaused]);
 
-  // Filter & Search Logic
+  // Handle jump to product number with highlight pulse
+  const jumpToProductNumber = (numStr: string) => {
+    const num = parseInt(numStr, 10);
+    if (isNaN(num)) return;
+
+    const targetProduct = products.find((p) => p.is_active && p.number === num);
+    if (!targetProduct) {
+      toast.error(`Produk #${num} tidak ditemukan di etalase`);
+      return;
+    }
+
+    // Reset filters that might hide the product
+    setSelectedCategory("all");
+    setSearchQuery("");
+    setIsNumpadOpen(false);
+
+    // Scroll smoothly to target element
+    setTimeout(() => {
+      const element = document.getElementById(`product-${num}`);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+        setHighlightedProductId(targetProduct.id);
+        toast.success(`Menemukan produk #${num}: ${targetProduct.name}`);
+
+        // Remove highlight after 4.5 seconds
+        setTimeout(() => {
+          setHighlightedProductId(null);
+        }, 4500);
+      }
+    }, 150);
+  };
+
+  // Preview product currently typed in numpad
+  const numpadPreviewProduct = useMemo(() => {
+    if (!numpadValue) return null;
+    const num = parseInt(numpadValue, 10);
+    if (isNaN(num)) return null;
+    return products.find((p) => p.is_active && p.number === num) || null;
+  }, [numpadValue, products]);
+
+  // Filter, Search & Sorting Logic
   const filteredProducts = useMemo(() => {
     let list = products.filter((p) => p.is_active);
 
-    // Filter by Category
+    // 1. Filter by Category
     if (selectedCategory !== "all") {
       list = list.filter((p) => p.category_id === selectedCategory);
     }
 
+    // 2. Search Query Handling
     const query = searchQuery.trim().toLowerCase();
-    if (!query) return list;
+    if (query) {
+      const normalized = query
+        .replace(/^#/, "")
+        .replace(/^nomor\s+/, "")
+        .replace(/^no\.?\s+/, "")
+        .replace(/\.$/, "")
+        .trim();
 
-    // Normalize query: strip common prefixes so "#3", "nomor 3", "no 3", "3." all resolve to "3"
-    const normalized = query
-      .replace(/^#/, "")           // "#3" → "3"
-      .replace(/^nomor\s+/, "")    // "nomor 3" → "3"
-      .replace(/^no\.?\s+/, "")    // "no 3" / "no.3" → "3"
-      .replace(/\.$/, "")          // "3." → "3"
-      .trim();
+      const isNumeric = /^\d+$/.test(normalized);
 
-    const isNumeric = /^\d+$/.test(normalized);
+      if (isNumeric) {
+        const searchNum = parseInt(normalized, 10);
+        const exactMatch = list.find((p) => p.number === searchNum);
+        const partialNumMatches = list.filter(
+          (p) => p.number !== searchNum && p.number.toString().includes(normalized)
+        );
+        const nameMatches = list.filter(
+          (p) =>
+            p.number !== searchNum &&
+            !partialNumMatches.includes(p) &&
+            p.name.toLowerCase().includes(normalized)
+        );
 
-    if (isNumeric) {
-      const searchNum = parseInt(normalized, 10);
-      const exactMatch = list.find((p) => p.number === searchNum);
-      const partialNumMatches = list.filter(
-        (p) => p.number !== searchNum && p.number.toString().includes(normalized)
-      );
-      // Also include products whose name contains the digits (e.g. "iPhone 14" when searching "14")
-      const nameMatches = list.filter(
-        (p) =>
-          p.number !== searchNum &&
-          !partialNumMatches.includes(p) &&
-          p.name.toLowerCase().includes(normalized)
-      );
-
-      if (exactMatch) {
-        return [exactMatch, ...partialNumMatches, ...nameMatches];
+        if (exactMatch) {
+          list = [exactMatch, ...partialNumMatches, ...nameMatches];
+        } else {
+          list = [...partialNumMatches, ...nameMatches];
+        }
+      } else {
+        list = list.filter((p) => p.name.toLowerCase().includes(normalized));
       }
-      return [...partialNumMatches, ...nameMatches];
     }
 
-    // Text search by name (case-insensitive)
-    return list.filter((p) => p.name.toLowerCase().includes(normalized));
-  }, [products, selectedCategory, searchQuery]);
+    // 3. Sorting Options
+    const sorted = [...list];
+    switch (sortBy) {
+      case "popular":
+        sorted.sort((a, b) => {
+          // Sort by featured first, then clicks count if available
+          if (a.is_featured && !b.is_featured) return -1;
+          if (!a.is_featured && b.is_featured) return 1;
+          return (b.clicks_count || 0) - (a.clicks_count || 0);
+        });
+        break;
+      case "price_asc":
+        sorted.sort((a, b) => {
+          const priceA = a.price ?? Infinity;
+          const priceB = b.price ?? Infinity;
+          return priceA - priceB;
+        });
+        break;
+      case "price_desc":
+        sorted.sort((a, b) => {
+          const priceA = a.price ?? -Infinity;
+          const priceB = b.price ?? -Infinity;
+          return priceB - priceA;
+        });
+        break;
+      case "newest":
+        sorted.sort((a, b) => b.number - a.number);
+        break;
+      case "default":
+      default:
+        // Keep original order or number ascending
+        break;
+    }
+
+    return sorted;
+  }, [products, selectedCategory, searchQuery, sortBy]);
 
   // Featured Products (is_featured = true)
   const featuredProducts = useMemo(() => {
@@ -126,13 +219,47 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
     }
   };
 
-  const handleShare = () => {
+  const currentUrl = typeof window !== "undefined" ? window.location.href : `https://udalink.id/${profile.username}`;
+
+  const handleCopyLink = () => {
     if (typeof window !== "undefined") {
-      navigator.clipboard.writeText(window.location.href);
+      navigator.clipboard.writeText(currentUrl);
       setCopiedLink(true);
       toast.success("Tautan etalase berhasil disalin!");
       setTimeout(() => setCopiedLink(false), 2000);
     }
+  };
+
+  // Download QR Code as PNG image
+  const handleDownloadQr = () => {
+    const svgElement = document.getElementById("showcase-qr-code");
+    if (!svgElement) return;
+
+    const svgString = new XMLSerializer().serializeToString(svgElement);
+    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const URL = window.URL || window.webkitURL || window;
+    const blobURL = URL.createObjectURL(svgBlob);
+
+    const image = new window.Image();
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 600;
+      canvas.height = 600;
+      const context = canvas.getContext("2d");
+      if (!context) return;
+
+      context.fillStyle = "#FFFFFF";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 50, 50, 500, 500);
+
+      const png = canvas.toDataURL("image/png");
+      const downloadLink = document.createElement("a");
+      downloadLink.download = `QR-Etalase-${profile.username}.png`;
+      downloadLink.href = png;
+      downloadLink.click();
+      toast.success("QR Code berhasil diunduh!");
+    };
+    image.src = blobURL;
   };
 
   const isNumericSearch = /^\d+$/.test(searchQuery.trim());
@@ -159,7 +286,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
         <div className="p-4 flex items-center justify-between z-10">
           <Link
             href="/"
-            className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full transition-all"
+            className="flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-full transition-all shadow-xs active:scale-[0.98]"
             style={{
               backgroundColor: theme.card,
               color: theme.text,
@@ -167,31 +294,51 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
               borderWidth: "1px",
             }}
           >
-            <span className="text-[#16A34A] font-extrabold">Uda</span>
+            <span className="text-[#16A34A] font-extrabold tracking-tight">Uda</span>
             <span>Link</span>
           </Link>
 
-          <button
-            type="button"
-            onClick={handleShare}
-            className="p-2.5 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-full transition-all cursor-pointer shadow-xs active:scale-95"
-            style={{
-              backgroundColor: theme.card,
-              color: theme.text,
-              borderColor: theme.cardBorder,
-              borderWidth: "1px",
-            }}
-            title="Bagikan etalase"
-          >
-            {copiedLink ? (
-              <Check className="h-4 w-4 text-[#16A34A]" />
-            ) : (
+          <div className="flex items-center gap-2">
+            {/* Quick Numpad Toggle Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setNumpadValue("");
+                setIsNumpadOpen(true);
+              }}
+              className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-all cursor-pointer shadow-xs active:scale-95"
+              style={{
+                backgroundColor: theme.card,
+                color: theme.text,
+                borderColor: theme.cardBorder,
+                borderWidth: "1px",
+              }}
+              title="Cari nomor produk via Numpad"
+              aria-label="Cari nomor produk"
+            >
+              <Hash className="h-4 w-4 text-[#16A34A]" />
+            </button>
+
+            {/* Share & QR Modal Trigger */}
+            <button
+              type="button"
+              onClick={() => setIsShareModalOpen(true)}
+              className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-all cursor-pointer shadow-xs active:scale-95"
+              style={{
+                backgroundColor: theme.card,
+                color: theme.text,
+                borderColor: theme.cardBorder,
+                borderWidth: "1px",
+              }}
+              title="Bagikan etalase & QR Code"
+              aria-label="Bagikan etalase"
+            >
               <Share2 className="h-4 w-4" />
-            )}
-          </button>
+            </button>
+          </div>
         </div>
 
-        {/* 1. PROFILE HEADER (Round 96px avatar, name, bio, social icons) */}
+        {/* 1. PROFILE HEADER */}
         <div className="px-5 pt-1 pb-4 flex flex-col items-center text-center">
           <div className="relative mb-3">
             <div
@@ -227,7 +374,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
           </div>
 
           <h1
-            className="text-xl font-bold tracking-tight leading-snug"
+            className="text-xl font-extrabold tracking-tight leading-snug"
             style={{ color: theme.text }}
           >
             {profile.display_name}
@@ -249,7 +396,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
             </p>
           )}
 
-          {/* Social Media Links Row */}
+          {/* Social Media Links Row (All targets >= 44x44px for thumb compliance) */}
           <div className="flex items-center gap-2.5 mt-4">
             {profile.instagram && (
               <a
@@ -260,13 +407,14 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                 }
                 target="_blank"
                 rel="noreferrer"
-                className="p-2.5 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl transition-transform hover:scale-110 active:scale-95 shadow-xs"
+                className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-transform hover:scale-110 active:scale-95 shadow-xs"
                 style={{
                   backgroundColor: theme.card,
                   color: theme.text,
                   border: `1px solid ${theme.cardBorder}`,
                 }}
                 title="Instagram"
+                aria-label="Instagram"
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
@@ -285,13 +433,14 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                 }
                 target="_blank"
                 rel="noreferrer"
-                className="p-2.5 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl transition-transform hover:scale-110 active:scale-95 shadow-xs"
+                className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-transform hover:scale-110 active:scale-95 shadow-xs"
                 style={{
                   backgroundColor: theme.card,
                   color: theme.text,
                   border: `1px solid ${theme.cardBorder}`,
                 }}
                 title="TikTok"
+                aria-label="TikTok"
               >
                 <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
                   <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.35 0 .69.07 1 .19V9.07a6.37 6.37 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.33 6.34 6.34 0 0 0 9.34 21.67a6.34 6.34 0 0 0 6.34-6.34V8.71a8.18 8.18 0 0 0 4.91 1.62V6.88a4.83 4.83 0 0 1-1-.19z" />
@@ -310,13 +459,14 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                 }
                 target="_blank"
                 rel="noreferrer"
-                className="p-2.5 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl transition-transform hover:scale-110 active:scale-95 shadow-xs"
+                className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-transform hover:scale-110 active:scale-95 shadow-xs"
                 style={{
                   backgroundColor: theme.card,
                   color: theme.text,
                   border: `1px solid ${theme.cardBorder}`,
                 }}
                 title="YouTube"
+                aria-label="YouTube"
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17" />
@@ -334,13 +484,14 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                 }
                 target="_blank"
                 rel="noreferrer"
-                className="p-2.5 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl transition-transform hover:scale-110 active:scale-95 shadow-xs"
+                className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-transform hover:scale-110 active:scale-95 shadow-xs"
                 style={{
                   backgroundColor: theme.card,
                   color: theme.text,
                   border: `1px solid ${theme.cardBorder}`,
                 }}
                 title="WhatsApp"
+                aria-label="WhatsApp"
               >
                 <MessageCircle className="h-4 w-4" />
               </a>
@@ -348,7 +499,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
           </div>
         </div>
 
-        {/* 2. PROMOTIONAL BANNERS CAROUSEL ANIMATED */}
+        {/* 2. PROMOTIONAL BANNERS CAROUSEL */}
         {banners.length > 0 && (
           <div
             className="px-4 py-2"
@@ -361,7 +512,6 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
               className="relative rounded-2xl overflow-hidden aspect-[21/9] bg-slate-200 shadow-sm border group"
               style={{ borderColor: theme.cardBorder }}
             >
-              {/* Carousel Track */}
               <div
                 className="flex h-full transition-transform duration-700 ease-out"
                 style={{
@@ -383,7 +533,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                       className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     {banner.title && (
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent p-3 pb-8 flex flex-col justify-end z-10">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent p-3 pb-8 flex flex-col justify-end z-10">
                         <p className="text-white text-xs font-bold leading-snug line-clamp-2">
                           {banner.title}
                         </p>
@@ -402,7 +552,6 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                 ))}
               </div>
 
-              {/* Prev / Next navigation buttons */}
               {banners.length > 1 && (
                 <>
                   <button
@@ -412,7 +561,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                       setActiveBannerIndex((prev) => (prev - 1 + banners.length) % banners.length);
                     }}
                     aria-label="Banner sebelumnya"
-                    className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-xs text-sm"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-xs text-sm"
                   >
                     ‹
                   </button>
@@ -423,12 +572,11 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                       setActiveBannerIndex((prev) => (prev + 1) % banners.length);
                     }}
                     aria-label="Banner berikutnya"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-xs text-sm"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-xs text-sm"
                   >
                     ›
                   </button>
 
-                  {/* Dot Indicators with 24px+ tap target */}
                   <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-0.5 z-20 px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-xs">
                     {banners.map((b, idx) => (
                       <button
@@ -457,51 +605,74 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
           </div>
         )}
 
-        {/* 3. STICKY SEARCH BAR (Menempel di atas saat gulir) */}
+        {/* 3. STICKY SEARCH & NUMPAD BAR (Menempel di atas dengan glassmorphism) */}
         <div
-          className="sticky top-0 z-30 px-4 py-3 backdrop-blur-md transition-colors"
+          className="sticky top-0 z-30 px-4 py-2.5 backdrop-blur-md transition-colors"
           style={{
-            backgroundColor: `${theme.bg}ee`,
+            backgroundColor: `${theme.bg}f0`,
             borderBottom: `1px solid ${theme.cardBorder}`,
           }}
         >
-          <div className="relative">
-            <Search
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4"
-              style={{ color: theme.textSecondary }}
-            />
-            <input
-              type="text"
-              id="search-product"
-              placeholder="Cari nomor atau nama produk…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-11 pl-10 pr-9 rounded-xl text-xs sm:text-sm font-medium transition-all shadow-xs focus:outline-none focus:ring-2"
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4"
+                style={{ color: theme.textSecondary }}
+              />
+              <input
+                type="text"
+                id="search-product"
+                placeholder="Cari nomor atau nama produk…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-11 pl-10 pr-9 rounded-xl text-xs sm:text-sm font-medium transition-all shadow-xs focus:outline-none focus:ring-2"
+                style={{
+                  backgroundColor: theme.card,
+                  color: theme.text,
+                  border: `1px solid ${theme.cardBorder}`,
+                }}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-[#94A3B8] hover:text-[#0F172A]"
+                  aria-label="Bersihkan pencarian"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Quick Numpad Launcher Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setNumpadValue("");
+                setIsNumpadOpen(true);
+              }}
+              className="h-11 px-3 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all shadow-xs active:scale-95 shrink-0"
               style={{
                 backgroundColor: theme.card,
                 color: theme.text,
                 border: `1px solid ${theme.cardBorder}`,
               }}
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-[#94A3B8] hover:text-[#0F172A]"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
+              title="Ketik nomor via Numpad"
+            >
+              <Hash className="h-3.5 w-3.5 text-[#16A34A]" />
+              <span className="hidden xs:inline">No</span>
+            </button>
           </div>
         </div>
 
-        {/* 4. CATEGORY CHIPS (Geser ke samping, chip pertama "Semua") */}
-        <div className="px-4 py-2.5">
-          <div className="flex gap-2 overflow-x-auto no-scrollbar scroll-smooth pb-1">
+        {/* 4. CATEGORY CHIPS & SORT FILTER BAR */}
+        <div className="px-4 py-2.5 space-y-2">
+          {/* Category Chips */}
+          <div className="flex gap-2 overflow-x-auto no-scrollbar scroll-smooth pb-0.5">
             <button
               type="button"
               onClick={() => setSelectedCategory("all")}
-              className="px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all shadow-2xs cursor-pointer"
+              className="px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all shadow-2xs cursor-pointer active:scale-95"
               style={{
                 backgroundColor:
                   selectedCategory === "all" ? theme.chipActiveBg : theme.card,
@@ -520,7 +691,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                 key={cat.id}
                 type="button"
                 onClick={() => setSelectedCategory(cat.id)}
-                className="px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all shadow-2xs cursor-pointer"
+                className="px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all shadow-2xs cursor-pointer active:scale-95"
                 style={{
                   backgroundColor:
                     selectedCategory === cat.id ? theme.chipActiveBg : theme.card,
@@ -535,11 +706,43 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
               </button>
             ))}
           </div>
+
+          {/* Quick Sort Options Row */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1 text-[11px]">
+            <div className="flex items-center gap-1 text-slate-400 pl-0.5 shrink-0">
+              <ArrowUpDown className="h-3 w-3" />
+              <span className="font-semibold text-[10px] uppercase tracking-wider">Urut:</span>
+            </div>
+
+            {[
+              { id: "default", label: "Nomor #" },
+              { id: "popular", label: "Terpopuler" },
+              { id: "price_asc", label: "Termurah" },
+              { id: "price_desc", label: "Termahal" },
+              { id: "newest", label: "Terbaru" },
+            ].map((sort) => {
+              const isActive = sortBy === sort.id;
+              return (
+                <button
+                  key={sort.id}
+                  type="button"
+                  onClick={() => setSortBy(sort.id as SortOption)}
+                  className={`px-2.5 py-1 rounded-lg font-medium whitespace-nowrap transition-all cursor-pointer ${
+                    isActive
+                      ? "bg-[#16A34A]/10 text-[#16A34A] font-bold border border-[#16A34A]/30"
+                      : "text-slate-500 hover:text-slate-800 bg-black/[0.02]"
+                  }`}
+                >
+                  {sort.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* 5. PRODUK UNGGULAN (Khusus Pro, row kartu geser - hanya tampil saat tidak sedang mencari) */}
-        {!searchQuery && selectedCategory === "all" && featuredProducts.length > 0 && (
-          <div className="px-4 py-3">
+        {!searchQuery && selectedCategory === "all" && sortBy === "default" && featuredProducts.length > 0 && (
+          <div className="px-4 py-2">
             <div className="flex items-center gap-1.5 mb-2.5">
               <Award className="h-4 w-4 text-amber-500" />
               <h2
@@ -554,7 +757,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
               {featuredProducts.map((prod) => (
                 <div
                   key={`feat_${prod.id}`}
-                  className="min-w-[140px] max-w-[140px] rounded-2xl p-2 shadow-xs transition-all flex flex-col justify-between shrink-0"
+                  className="min-w-[140px] max-w-[140px] rounded-2xl p-2.5 shadow-xs transition-all flex flex-col justify-between shrink-0 hover:shadow-md"
                   style={{
                     backgroundColor: theme.card,
                     border: `1px solid ${theme.cardBorder}`,
@@ -582,7 +785,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                       />
                     </div>
                     <p
-                      className="text-[11px] font-medium line-clamp-2 leading-snug"
+                      className="text-[11px] font-semibold line-clamp-2 leading-snug"
                       style={{ color: theme.text }}
                     >
                       {prod.name}
@@ -590,7 +793,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                   </div>
                   <div className="mt-2">
                     <p
-                      className="text-xs font-bold"
+                      className="text-xs font-extrabold"
                       style={{ color: theme.button }}
                     >
                       {formatRupiah(prod.price)}
@@ -599,9 +802,9 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                       href={refParam ? `/go/${prod.id}?ref=${encodeURIComponent(refParam)}` : `/go/${prod.id}`}
                       target="_blank"
                       rel="noreferrer"
-                      className={`mt-1.5 w-full py-1.5 ${
+                      className={`mt-1.5 w-full py-2 ${
                         theme.buttonRadius || "rounded-lg"
-                      } text-xs min-h-[34px] font-bold flex items-center justify-center gap-1 transition-all shadow-2xs`}
+                      } text-xs min-h-[36px] font-bold flex items-center justify-center gap-1 transition-all shadow-2xs active:scale-[0.98]`}
                       style={{
                         backgroundColor: theme.button,
                         color: theme.buttonText,
@@ -625,10 +828,10 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
               className="text-xs font-bold uppercase tracking-wider"
               style={{ color: theme.textSecondary }}
             >
-              {searchQuery ? `Hasil Pencarian (${filteredProducts.length})` : "Daftar Produk"}
+              {searchQuery ? `Hasil Pencarian (${filteredProducts.length})` : `Daftar Produk (${filteredProducts.length})`}
             </h2>
             {isNumericSearch && searchedNumber !== null && (
-              <span className="text-[10px] font-medium text-[#16A34A] bg-[#DCFCE7] px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold text-[#16A34A] bg-[#DCFCE7] px-2 py-0.5 rounded-full">
                 Mencari nomor #{searchedNumber}
               </span>
             )}
@@ -657,8 +860,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
-                  className="text-xs font-semibold underline underline-offset-4 cursor-pointer"
-                  style={{ color: theme.button }}
+                  className="text-xs font-bold underline underline-offset-4 cursor-pointer text-[#16A34A]"
                 >
                   Tampilkan semua produk
                 </button>
@@ -669,19 +871,24 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
             <div className="grid grid-cols-2 gap-3">
               {filteredProducts.map((prod) => {
                 const isExactMatched = searchedNumber !== null && prod.number === searchedNumber;
+                const isPulseHighlighted = highlightedProductId === prod.id;
 
                 return (
                   <div
                     key={prod.id}
                     id={`product-${prod.number}`}
-                    className={`rounded-2xl p-2.5 shadow-xs transition-all flex flex-col justify-between ${
-                      isExactMatched
-                        ? "ring-2 ring-[#16A34A] ring-offset-2 scale-[1.02] shadow-md"
+                    className={`rounded-2xl p-2.5 shadow-xs transition-all duration-300 flex flex-col justify-between group hover:shadow-md ${
+                      isPulseHighlighted
+                        ? "animate-pulse ring-4 ring-[#16A34A] ring-offset-2 scale-[1.02] shadow-xl"
+                        : isExactMatched
+                        ? "ring-2 ring-[#16A34A] ring-offset-2 scale-[1.01] shadow-md"
                         : ""
                     }`}
                     style={{
                       backgroundColor: theme.card,
-                      border: `1px solid ${isExactMatched ? "#16A34A" : theme.cardBorder}`,
+                      border: `1px solid ${
+                        isPulseHighlighted || isExactMatched ? "#16A34A" : theme.cardBorder
+                      }`,
                     }}
                   >
                     <div>
@@ -692,23 +899,23 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                           alt={prod.name}
                           sizes="(max-width: 480px) 50vw, 240px"
                           aspectClassName="relative w-full h-full overflow-hidden"
-                          className="object-contain p-0.5 hover:scale-105 transition-transform duration-200"
+                          className="object-contain p-0.5 group-hover:scale-105 transition-transform duration-200"
                           badge={
                             <>
                               <span
                                 className={`absolute top-2 left-2 text-[10px] font-extrabold px-2 py-0.5 rounded-md z-10 shadow-xs ${
-                                  isExactMatched ? "bg-[#16A34A] text-white ring-2 ring-white" : ""
+                                  isExactMatched || isPulseHighlighted ? "bg-[#16A34A] text-white ring-2 ring-white" : ""
                                 }`}
                                 style={{
-                                  backgroundColor: isExactMatched ? "#16A34A" : theme.badgeBg,
-                                  color: isExactMatched ? "#FFFFFF" : theme.badgeText,
+                                  backgroundColor: isExactMatched || isPulseHighlighted ? "#16A34A" : theme.badgeBg,
+                                  color: isExactMatched || isPulseHighlighted ? "#FFFFFF" : theme.badgeText,
                                 }}
                               >
                                 #{prod.number}
                               </span>
 
-                              {isExactMatched && (
-                                <span className="absolute bottom-2 left-2 right-2 z-10 bg-[#16A34A] text-white text-[10px] font-bold py-0.5 rounded text-center shadow-xs">
+                              {(isExactMatched || isPulseHighlighted) && (
+                                <span className="absolute bottom-2 left-2 right-2 z-10 bg-[#16A34A] text-white text-[10px] font-extrabold py-0.5 rounded text-center shadow-xs">
                                   Nomor Persis ★
                                 </span>
                               )}
@@ -737,14 +944,14 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
                         </p>
                       )}
 
-                      {/* Tombol Beli */}
+                      {/* Tombol Beli (Touch Target >= 44px) */}
                       <a
                         href={refParam ? `/go/${prod.id}?ref=${encodeURIComponent(refParam)}` : `/go/${prod.id}`}
                         target="_blank"
                         rel="noreferrer"
-                        className={`w-full h-10 ${
+                        className={`w-full min-h-[44px] ${
                           theme.buttonRadius || "rounded-xl"
-                        } text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-[0.98]`}
+                        } text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-[0.98] hover:opacity-95`}
                         style={{
                           backgroundColor: theme.button,
                           color: theme.buttonText,
@@ -761,7 +968,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
           )}
         </div>
 
-        {/* 7. FOOTER BRANDING (Khusus akun Gratis atau jika show_branding aktif) */}
+        {/* 7. FOOTER BRANDING */}
         {show_branding && (
           <div className="mt-8 mb-6 text-center px-4">
             <Link
@@ -776,7 +983,7 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
           </div>
         )}
 
-        {/* 8. FLOATING WHATSAPP BUTTON (Pojok kanan bawah jika nomor WA diisi) */}
+        {/* 8. FLOATING WHATSAPP BUTTON */}
         {profile.whatsapp && (
           <a
             href={`https://wa.me/${profile.whatsapp.replace(/[^0-9]/g, "")}?text=Halo%20${encodeURIComponent(
@@ -792,6 +999,249 @@ export function ShowcaseView({ initialData }: ShowcaseViewProps) {
           </a>
         )}
       </div>
+
+      {/* ────────────────────────────────────────────────────────────────────────── */}
+      {/* 9. NUMPAD QUICK-SEARCH DRAWER / MODAL */}
+      {/* ────────────────────────────────────────────────────────────────────────── */}
+      {isNumpadOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={() => setIsNumpadOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-5 bg-white shadow-2xl border border-slate-200 animate-in fade-in slide-in-from-bottom-6 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Drawer Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-xl bg-emerald-50 text-[#16A34A] flex items-center justify-center font-black text-sm">
+                  #
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm text-[#0F172A]">Cari Nomor Produk</h3>
+                  <p className="text-[11px] text-slate-500">Ketik nomor produk untuk lompat instan</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsNumpadOpen(false)}
+                className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
+                aria-label="Tutup"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Current Typed Value Display */}
+            <div className="my-4 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-center flex items-center justify-center gap-1.5 min-h-[58px]">
+              <span className="text-xl font-bold text-slate-400">#</span>
+              <span className="text-3xl font-black tracking-wider text-[#0F172A]">
+                {numpadValue || "..."}
+              </span>
+            </div>
+
+            {/* Live Product Preview Match */}
+            {numpadPreviewProduct ? (
+              <div className="mb-4 p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200 flex items-center justify-between gap-3 animate-in fade-in">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="h-10 w-10 rounded-lg bg-white overflow-hidden relative border border-emerald-100 shrink-0">
+                    <img
+                      src={numpadPreviewProduct.image_url || "/placeholder.png"}
+                      alt={numpadPreviewProduct.name}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-900 truncate">
+                      {numpadPreviewProduct.name}
+                    </p>
+                    <p className="text-[11px] font-extrabold text-[#16A34A]">
+                      {formatRupiah(numpadPreviewProduct.price)}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => jumpToProductNumber(numpadValue)}
+                  className="px-3 py-1.5 rounded-lg bg-[#16A34A] text-white text-xs font-bold flex items-center gap-1 shrink-0 shadow-xs hover:bg-[#15803D] active:scale-95"
+                >
+                  <span>Lihat</span>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : numpadValue ? (
+              <div className="mb-4 py-2 px-3 rounded-xl bg-slate-100 text-center text-xs text-slate-500">
+                Belum ada produk dengan nomor #{numpadValue}
+              </div>
+            ) : null}
+
+            {/* Numpad Keypad Grid (3 x 4) */}
+            <div className="grid grid-cols-3 gap-2">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => (
+                <button
+                  key={digit}
+                  type="button"
+                  onClick={() => {
+                    if (numpadValue.length < 5) {
+                      setNumpadValue((prev) => prev + digit.toString());
+                    }
+                  }}
+                  className="h-13 rounded-2xl bg-white border border-slate-200 text-lg font-bold text-[#0F172A] hover:bg-slate-50 active:scale-95 shadow-2xs transition-all flex items-center justify-center cursor-pointer"
+                >
+                  {digit}
+                </button>
+              ))}
+
+              {/* Clear Button */}
+              <button
+                type="button"
+                onClick={() => setNumpadValue("")}
+                className="h-13 rounded-2xl bg-slate-100 text-sm font-bold text-slate-600 hover:bg-slate-200 active:scale-95 transition-all flex items-center justify-center cursor-pointer"
+              >
+                Hapus
+              </button>
+
+              {/* Zero */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (numpadValue && numpadValue.length < 5) {
+                    setNumpadValue((prev) => prev + "0");
+                  }
+                }}
+                className="h-13 rounded-2xl bg-white border border-slate-200 text-lg font-bold text-[#0F172A] hover:bg-slate-50 active:scale-95 shadow-2xs transition-all flex items-center justify-center cursor-pointer"
+              >
+                0
+              </button>
+
+              {/* Backspace Button */}
+              <button
+                type="button"
+                onClick={() => setNumpadValue((prev) => prev.slice(0, -1))}
+                className="h-13 rounded-2xl bg-slate-100 text-slate-600 hover:bg-slate-200 active:scale-95 transition-all flex items-center justify-center cursor-pointer"
+                aria-label="Hapus satu angka"
+              >
+                <Delete className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Action Button: Jump */}
+            <button
+              type="button"
+              disabled={!numpadValue}
+              onClick={() => jumpToProductNumber(numpadValue)}
+              className="mt-4 w-full h-12 rounded-xl bg-[#16A34A] hover:bg-[#15803D] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.98]"
+            >
+              <Sparkles className="h-4 w-4" />
+              <span>Lompat ke Produk #{numpadValue || "..."}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ────────────────────────────────────────────────────────────────────────── */}
+      {/* 10. MODAL BAGIKAN & QR CODE INTERAKTIF */}
+      {/* ────────────────────────────────────────────────────────────────────────── */}
+      {isShareModalOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setIsShareModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-3xl p-6 bg-white shadow-2xl border border-slate-200 relative text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => setIsShareModalOpen(false)}
+              className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
+              aria-label="Tutup modal"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            {/* Title */}
+            <div className="h-10 w-10 rounded-2xl bg-emerald-50 text-[#16A34A] flex items-center justify-center mx-auto mb-2">
+              <QrCode className="h-5 w-5" />
+            </div>
+            <h3 className="font-extrabold text-base text-[#0F172A]">
+              Bagikan Etalase
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Scan QR code atau salin tautan etalase @{profile.username}
+            </p>
+
+            {/* QR Code Container */}
+            <div className="my-5 p-4 rounded-2xl bg-slate-50 border border-slate-200 inline-block shadow-inner">
+              <div id="showcase-qr-code">
+                <QrCodeSvg
+                  value={currentUrl}
+                  size={190}
+                  fgColor="#0F172A"
+                  bgColor="#FFFFFF"
+                />
+              </div>
+            </div>
+
+            {/* URL Display with Copy Button */}
+            <div className="flex items-center gap-1.5 p-1.5 pl-3 rounded-xl bg-slate-100 border border-slate-200 mb-4 text-left">
+              <span className="text-xs font-mono text-slate-600 truncate flex-1">
+                {currentUrl}
+              </span>
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="px-3 py-2 rounded-lg bg-[#16A34A] text-white text-xs font-bold flex items-center gap-1 shrink-0 hover:bg-[#15803D] active:scale-95 transition-all shadow-xs"
+              >
+                {copiedLink ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                <span>{copiedLink ? "Disalin!" : "Salin"}</span>
+              </button>
+            </div>
+
+            {/* Social Share Quick Links */}
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(
+                  `Cek koleksi produk rekomendasi saya di: ${currentUrl}`
+                )}`}
+                target="_blank"
+                rel="noreferrer"
+                className="py-2.5 px-2 rounded-xl bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 font-bold text-xs flex flex-col items-center gap-1 transition-colors"
+              >
+                <MessageCircle className="h-4 w-4" />
+                <span>WhatsApp</span>
+              </a>
+
+              <a
+                href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(
+                  currentUrl
+                )}&text=${encodeURIComponent(
+                  `Koleksi rekomendasi produk pilihan di etalase saya:`
+                )}`}
+                target="_blank"
+                rel="noreferrer"
+                className="py-2.5 px-2 rounded-xl bg-slate-100 text-slate-800 hover:bg-slate-200 font-bold text-xs flex flex-col items-center gap-1 transition-colors"
+              >
+                <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                </svg>
+                <span>X / Twitter</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={handleDownloadQr}
+                className="py-2.5 px-2 rounded-xl bg-emerald-50 text-[#16A34A] hover:bg-emerald-100 font-bold text-xs flex flex-col items-center gap-1 transition-colors cursor-pointer"
+              >
+                <Download className="h-4 w-4" />
+                <span>Unduh QR</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

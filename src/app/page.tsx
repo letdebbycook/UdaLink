@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   Link2,
   ArrowRight,
-  Sparkles,
   Search,
   ShoppingBag,
   TrendingUp,
@@ -14,12 +13,12 @@ import {
   Check,
   X,
   Layers,
-  HelpCircle,
   Menu,
 } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PhoneMockup } from "@/components/landing/PhoneMockup";
+import { EarningsCalculator } from "@/components/landing/EarningsCalculator";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { LandingNavbarAuth } from "@/components/landing/LandingNavbarAuth";
 
@@ -319,6 +318,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* 4.5 KALKULATOR ESTIMASI CUAN */}
+      <EarningsCalculator />
 
       {/* 5. TABEL HARGA GRATIS VS PRO */}
       <section id="harga" className="py-20 bg-[#F8FAFC] border-y border-[#E2E8F0]">

@@ -1083,6 +1083,30 @@ export default function TampilanPage() {
         variant="danger"
       />
 
+      {/* Mobile Sticky Action Bar */}
+      <div className="lg:hidden fixed bottom-16 left-0 right-0 p-3 bg-white/95 backdrop-blur-md border-t border-slate-200 z-30 flex items-center justify-between gap-3 shadow-lg">
+        <Button
+          variant="outline"
+          size="sm"
+          type="button"
+          onClick={() => setShowMobilePreview(!showMobilePreview)}
+          className="gap-1.5 text-xs font-semibold"
+        >
+          <Smartphone className="w-4 h-4 text-[#16A34A]" />
+          {showMobilePreview ? "Tutup Pratinjau" : "Lihat Pratinjau"}
+        </Button>
+        <Button
+          size="sm"
+          type="button"
+          onClick={handleSaveSettings}
+          disabled={saving || loading}
+          className="bg-[#16A34A] hover:bg-[#15803D] text-white gap-1.5 text-xs font-bold"
+        >
+          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+          Simpan Perubahan
+        </Button>
+      </div>
+
       {/* Banner Crop Modal */}
       {bannerCropSrc && (
         <ImageCropModal
