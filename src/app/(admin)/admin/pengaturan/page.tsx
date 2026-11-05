@@ -130,7 +130,7 @@ export default function AdminPengaturanPage() {
 
     const primaryMethod = activeMethods[0] || paymentMethods[0];
 
-    let cleanedWa = adminWhatsapp.trim().replace(/^0/, "62").replace(/[^0-9]/g, "");
+    const cleanedWa = adminWhatsapp.trim().replace(/^0/, "62").replace(/[^0-9]/g, "");
     if (!cleanedWa || !/^62[0-9]{8,15}$/.test(cleanedWa)) {
       toast.error("Nomor WhatsApp Admin wajib diisi dengan format valid diawali 62 (contoh: 628123456789)");
       return;

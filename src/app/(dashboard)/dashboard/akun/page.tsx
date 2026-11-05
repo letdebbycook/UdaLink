@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { User, Lock, Loader2, Save, AlertCircle, ExternalLink, LogOut, Link2, Check, X, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ import Link from "next/link";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 
 export default function AkunPage() {
+  const router = useRouter();
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
@@ -538,7 +540,7 @@ export default function AkunPage() {
           try {
             await supabase.auth.signOut();
             toast.success("Berhasil keluar dari akun.");
-            window.location.href = "/masuk";
+            router.push("/masuk");
           } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : "Terjadi kesalahan";
             toast.error(`Gagal keluar: ${msg}`);

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Link2,
   LayoutDashboard,
@@ -31,6 +31,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -90,7 +91,7 @@ export default function DashboardLayout({
       setIsLoggingOut(true);
       await supabase.auth.signOut();
       toast.success("Berhasil keluar dari akun.");
-      window.location.href = "/masuk";
+      router.push("/masuk");
     } catch (err) {
       toast.error("Gagal keluar dari akun.");
       setIsLoggingOut(false);
