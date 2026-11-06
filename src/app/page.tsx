@@ -103,7 +103,7 @@ export default function LandingPage() {
       </header>
 
       {/* 2. HERO SECTION */}
-      <section className="relative overflow-hidden pt-12 pb-20 sm:pt-20 sm:pb-28 bg-gradient-to-b from-[#F0FDF4]/70 via-white to-white">
+      <section className="relative overflow-hidden pt-12 pb-20 sm:pt-20 sm:pb-28 bg-gradient-to-b from-[#F0FDF4]/70 via-white to-white animate-in fade-in duration-500">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             {/* Left Content */}
@@ -126,7 +126,7 @@ export default function LandingPage() {
                   href="/daftar"
                   className={buttonVariants({
                     size: "lg",
-                    className: "w-full sm:w-auto h-12 px-7 text-base font-bold gap-2 shadow-md shadow-[#16A34A]/20",
+                    className: "w-full sm:w-auto h-12 px-7 text-base font-bold gap-2 shadow-md shadow-[#16A34A]/20 hover:shadow-lg hover:shadow-[#16A34A]/30 hover:-translate-y-0.5 active:scale-95 transition-all duration-200",
                   })}
                 >
                   <span>Buat Etalase Gratis</span>
@@ -138,7 +138,7 @@ export default function LandingPage() {
                   className={buttonVariants({
                     variant: "outline",
                     size: "lg",
-                    className: "w-full sm:w-auto h-12 px-6 text-base font-semibold",
+                    className: "w-full sm:w-auto h-12 px-6 text-base font-semibold hover:bg-slate-50 hover:-translate-y-0.5 active:scale-95 transition-all duration-200",
                   })}
                 >
                   Lihat Contoh Etalase
@@ -187,7 +187,7 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Langkah 1 */}
-            <div className="bg-white p-7 rounded-2xl border border-[#E2E8F0] shadow-xs relative">
+            <div className="bg-white p-7 rounded-2xl border border-[#E2E8F0] shadow-xs relative hover:-translate-y-1 hover:shadow-md transition-all duration-300 group">
               <div className="h-10 w-10 rounded-xl bg-[#F0FDF4] text-[#16A34A] border border-[#DCFCE7] flex items-center justify-center font-bold text-base mb-5">
                 1
               </div>
@@ -200,7 +200,7 @@ export default function LandingPage() {
             </div>
 
             {/* Langkah 2 */}
-            <div className="bg-white p-7 rounded-2xl border border-[#E2E8F0] shadow-xs relative">
+            <div className="bg-white p-7 rounded-2xl border border-[#E2E8F0] shadow-xs relative hover:-translate-y-1 hover:shadow-md transition-all duration-300 group">
               <div className="h-10 w-10 rounded-xl bg-[#F0FDF4] text-[#16A34A] border border-[#DCFCE7] flex items-center justify-center font-bold text-base mb-5">
                 2
               </div>
@@ -213,7 +213,7 @@ export default function LandingPage() {
             </div>
 
             {/* Langkah 3 */}
-            <div className="bg-white p-7 rounded-2xl border border-[#E2E8F0] shadow-xs relative">
+            <div className="bg-white p-7 rounded-2xl border border-[#E2E8F0] shadow-xs relative hover:-translate-y-1 hover:shadow-md transition-all duration-300 group">
               <div className="h-10 w-10 rounded-xl bg-[#F0FDF4] text-[#16A34A] border border-[#DCFCE7] flex items-center justify-center font-bold text-base mb-5">
                 3
               </div>
@@ -244,7 +244,7 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="p-6 rounded-2xl border border-[#E2E8F0] hover:border-[#16A34A]/50 hover:shadow-md transition-all">
+            <div className="p-6 rounded-2xl border border-[#E2E8F0] hover:border-[#16A34A]/50 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 group">
               <div className="h-10 w-10 rounded-xl bg-[#F0FDF4] text-[#16A34A] flex items-center justify-center mb-4">
                 <Search className="h-5 w-5" />
               </div>
@@ -256,7 +256,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="p-6 rounded-2xl border border-[#E2E8F0] hover:border-[#16A34A]/50 hover:shadow-md transition-all">
+            <div className="p-6 rounded-2xl border border-[#E2E8F0] hover:border-[#16A34A]/50 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 group">
               <div className="h-10 w-10 rounded-xl bg-[#F0FDF4] text-[#16A34A] flex items-center justify-center mb-4">
                 <ShoppingBag className="h-5 w-5" />
               </div>
@@ -268,7 +268,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="p-6 rounded-2xl border border-[#E2E8F0] hover:border-[#16A34A]/50 hover:shadow-md transition-all">
+            <div className="p-6 rounded-2xl border border-[#E2E8F0] hover:border-[#16A34A]/50 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 group">
               <div className="h-10 w-10 rounded-xl bg-[#F0FDF4] text-[#16A34A] flex items-center justify-center mb-4">
                 <Smartphone className="h-5 w-5" />
               </div>
@@ -280,7 +280,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="p-6 rounded-2xl border border-[#E2E8F0] hover:border-[#16A34A]/50 hover:shadow-md transition-all">
+            <div className="p-6 rounded-2xl border border-[#E2E8F0] hover:border-[#16A34A]/50 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 group">
               <div className="h-10 w-10 rounded-xl bg-[#F0FDF4] text-[#16A34A] flex items-center justify-center mb-4">
                 <TrendingUp className="h-5 w-5" />
               </div>
@@ -292,7 +292,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="p-6 rounded-2xl border border-[#E2E8F0] hover:border-[#16A34A]/50 hover:shadow-md transition-all">
+            <div className="p-6 rounded-2xl border border-[#E2E8F0] hover:border-[#16A34A]/50 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 group">
               <div className="h-10 w-10 rounded-xl bg-[#F0FDF4] text-[#16A34A] flex items-center justify-center mb-4">
                 <ShoppingBag className="h-5 w-5" />
               </div>
@@ -304,7 +304,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="p-6 rounded-2xl border border-[#E2E8F0] hover:border-[#16A34A]/50 hover:shadow-md transition-all">
+            <div className="p-6 rounded-2xl border border-[#E2E8F0] hover:border-[#16A34A]/50 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 group">
               <div className="h-10 w-10 rounded-xl bg-[#F0FDF4] text-[#16A34A] flex items-center justify-center mb-4">
                 <Layers className="h-5 w-5" />
               </div>

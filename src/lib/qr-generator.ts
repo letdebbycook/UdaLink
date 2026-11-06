@@ -274,3 +274,4 @@ export function generateQrMatrix(text: string): boolean[][] {
 
   return matrix.map((row) => row.map((cell) => cell === true));
 }
+
