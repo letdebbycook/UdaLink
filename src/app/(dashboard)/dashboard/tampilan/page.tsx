@@ -5,8 +5,9 @@ import Link from "next/link";
 import {
   Palette, User, Share2, Image as ImageIcon, Sparkles,
   Upload, Check, Lock, Loader2, Smartphone, ExternalLink,
-  MessageCircle, Video, Star, Eye
+  MessageCircle, Video, Star, Eye, Search, Hash
 } from "lucide-react";
+import { formatRupiah } from "@/lib/utils";
 
 function InstagramIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
@@ -79,6 +80,57 @@ export default function TampilanPage() {
   const [bannerCropSrc, setBannerCropSrc] = useState<string | null>(null);
 
   const isPro = plan?.is_pro ?? false;
+
+  const samplePreviewProducts = [
+    {
+      number: 1,
+      name: "Kemeja Linen Oversized",
+      price: 139000,
+      marketplace: "shopee",
+      image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=200&h=200&fit=crop",
+    },
+    {
+      number: 2,
+      name: "Keyboard Wireless 75%",
+      price: 499000,
+      marketplace: "tokopedia",
+      image: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=200&h=200&fit=crop",
+    },
+    {
+      number: 3,
+      name: "Serum Niacinamide 10%",
+      price: 89000,
+      marketplace: "tiktok",
+      image: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=200&h=200&fit=crop",
+    },
+    {
+      number: 4,
+      name: "Stand Laptop Aluminium",
+      price: 82000,
+      marketplace: "shopee",
+      image: "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=200&h=200&fit=crop",
+    },
+  ];
+
+  const displayProducts = products.length > 0
+    ? products.slice(0, 4).map((p, idx) => ({
+        number: p.number ?? idx + 1,
+        name: p.name || `Produk Pilihan #${idx + 1}`,
+        price: p.price ?? 99000,
+        marketplace: p.marketplace || "shopee",
+        image: (Array.isArray(p.images) && p.images[0]) || p.image_url || samplePreviewProducts[idx % 4].image,
+      }))
+    : samplePreviewProducts;
+
+  const getMarketplaceBtnText = (marketplace?: string) => {
+    switch (marketplace) {
+      case "shopee": return "Beli di Shopee";
+      case "tiktok": return "Beli di TikTok";
+      case "tokopedia": return "Beli di Tokopedia";
+      case "lazada": return "Beli di Lazada";
+      default: return "Beli Sekarang";
+    }
+  };
 
   // Auto carousel cycling for live simulator preview
   useEffect(() => {
@@ -934,133 +986,262 @@ export default function TampilanPage() {
             showMobilePreview ? "block" : "hidden lg:block"
           } sticky top-6`}
         >
-          <div className="text-center mb-3 hidden lg:block">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Pratinjau Langsung (Layar HP 375px)
+          {/* Header Preview Interaktif */}
+          <div className="flex items-center justify-between mb-3 px-1">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+              <Smartphone className="w-4 h-4 text-[#16A34A]" />
+              <span>Pratinjau Layar HP 375px</span>
+            </div>
+            <span className="text-[11px] font-extrabold text-[#16A34A] bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100 flex items-center gap-1 shadow-2xs">
+              <Sparkles className="h-3 w-3" />
+              {currentTheme.name}
             </span>
           </div>
 
-          {/* Device Frame */}
-          <div className="mx-auto max-w-[360px] rounded-[40px] p-3 bg-slate-900 shadow-2xl border-4 border-slate-800">
-            {/* Phone Screen */}
+          {/* Phone Shell dengan Dynamic Ambient Glow */}
+          <div className="relative w-full flex justify-center py-2">
+            {/* Ambient Glow di belakang HP */}
             <div
-              className="rounded-[32px] overflow-hidden min-h-[580px] max-h-[620px] overflow-y-auto flex flex-col transition-colors duration-300 relative"
+              className="absolute inset-0 max-w-[340px] mx-auto rounded-full blur-2xl transition-all duration-700 opacity-40 pointer-events-none"
               style={{
-                backgroundColor: currentTheme.bg,
-                backgroundImage: currentTheme.bgGradient,
+                backgroundColor: currentTheme.button,
               }}
-            >
-              {/* Notch */}
-              <div className="h-5 w-28 bg-slate-900 rounded-b-xl mx-auto mb-3" />
+            />
 
-              {/* Profile Card Header */}
-              <div className="px-4 text-center space-y-2">
-                <div className="w-16 h-16 rounded-full mx-auto overflow-hidden border-2 shadow-xs bg-white/80" style={{ borderColor: currentTheme.cardBorder }}>
-                  {avatarPreview ? (
-                    <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-400">
-                      <User className="w-6 h-6" />
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-sm tracking-tight" style={{ color: currentTheme.text }}>
-                    {displayName || "Nama Toko Kamu"}
-                  </h3>
-                  <p className="text-xs mt-0.5 line-clamp-2" style={{ color: currentTheme.textSecondary }}>
-                    {bio || "Deskripsi etalase affiliate kamu akan muncul di sini."}
-                  </p>
-                </div>
-
-                {/* Social icons */}
-                <div className="flex items-center justify-center gap-3 pt-1">
-                  {whatsapp && <MessageCircle className="w-4 h-4 text-emerald-600" />}
-                  {instagram && <InstagramIcon className="w-4 h-4 text-pink-600" />}
-                  {tiktok && <Video className="w-4 h-4 text-slate-800" />}
-                  {youtube && <YoutubeIcon className="w-4 h-4 text-red-600" />}
-                </div>
+            {/* Apple iPhone Style Frame */}
+            <div className="relative mx-auto w-[310px] sm:w-[340px] rounded-[44px] border-[8px] border-[#0F172A] bg-white shadow-2xl overflow-hidden ring-1 ring-slate-900/10">
+              {/* Dynamic Island / Notch */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 h-5 w-28 bg-[#0F172A] rounded-b-xl z-30 flex items-center justify-center pointer-events-none">
+                <div className="h-2 w-2 rounded-full bg-slate-900 mr-2" />
+                <div className="h-1.5 w-7 rounded-full bg-slate-800" />
               </div>
 
-              {/* Banner Carousel Preview */}
-              {banners.length > 0 && isPro && (
-                <div className="px-4 mt-4">
-                  <div className="rounded-xl overflow-hidden aspect-video border relative group" style={{ borderColor: currentTheme.cardBorder }}>
-                    <img
-                      key={banners[previewBannerIndex % banners.length]?.id}
-                      src={banners[previewBannerIndex % banners.length]?.image_url}
-                      alt="Banner"
-                      className="w-full h-full object-cover transition-all duration-700 animate-in fade-in"
-                    />
-                    {banners[previewBannerIndex % banners.length]?.title && (
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-2">
-                        <span className="text-[10px] text-white font-medium line-clamp-1">
-                          {banners[previewBannerIndex % banners.length]?.title}
-                        </span>
+              {/* Screen Area dengan Smooth Fade-In dan NO SCROLLBAR */}
+              <div
+                key={selectedTheme}
+                className="pt-7 pb-4 min-h-[580px] max-h-[630px] overflow-y-auto no-scrollbar flex flex-col font-sans select-none transition-colors duration-500 animate-in fade-in duration-300"
+                style={{
+                  backgroundColor: currentTheme.bg,
+                  backgroundImage: currentTheme.bgGradient,
+                  color: currentTheme.text,
+                }}
+              >
+                {/* Profile Card Header */}
+                <div className="px-4 text-center space-y-2 mt-1">
+                  <div
+                    className="w-16 h-16 rounded-full mx-auto overflow-hidden border-2 shadow-md bg-white/80 relative transition-transform duration-200 hover:scale-105"
+                    style={{ borderColor: currentTheme.cardBorder }}
+                  >
+                    {avatarPreview ? (
+                      <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <div
+                        className="w-full h-full flex items-center justify-center font-bold text-xl text-white"
+                        style={{ backgroundColor: currentTheme.button }}
+                      >
+                        {(displayName || "U").charAt(0)}
                       </div>
                     )}
-                    {banners.length > 1 && (
-                      <div className="absolute bottom-1.5 right-2 flex items-center gap-1">
-                        {banners.map((b, idx) => (
-                          <div
-                            key={b.id}
-                            className={`h-1 rounded-full transition-all duration-300 ${
-                              idx === (previewBannerIndex % banners.length)
-                                ? "w-3 bg-white"
-                                : "w-1 bg-white/50"
-                            }`}
-                          />
-                        ))}
+                  </div>
+
+                  <div>
+                    <h3
+                      className="font-extrabold text-sm tracking-tight"
+                      style={{ color: currentTheme.text }}
+                    >
+                      {displayName || "Nama Toko Kamu"}
+                    </h3>
+                    <p
+                      className="text-xs mt-0.5 line-clamp-2 max-w-[240px] mx-auto"
+                      style={{ color: currentTheme.textSecondary }}
+                    >
+                      {bio || "Deskripsi etalase affiliate kamu akan muncul di sini."}
+                    </p>
+                  </div>
+
+                  {/* Social media icons */}
+                  <div className="flex items-center justify-center gap-2.5 pt-1">
+                    {whatsapp && (
+                      <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 shadow-2xs">
+                        <MessageCircle className="w-3.5 h-3.5" />
+                      </div>
+                    )}
+                    {instagram && (
+                      <div className="p-1.5 rounded-lg bg-pink-50 text-pink-600 shadow-2xs">
+                        <InstagramIcon className="w-3.5 h-3.5" />
+                      </div>
+                    )}
+                    {tiktok && (
+                      <div className="p-1.5 rounded-lg bg-slate-100 text-slate-800 shadow-2xs">
+                        <Video className="w-3.5 h-3.5" />
+                      </div>
+                    )}
+                    {youtube && (
+                      <div className="p-1.5 rounded-lg bg-red-50 text-red-600 shadow-2xs">
+                        <YoutubeIcon className="w-3.5 h-3.5" />
                       </div>
                     )}
                   </div>
                 </div>
-              )}
 
-              {/* Dummy Products Preview */}
-              <div className="p-4 space-y-2.5 flex-1">
-                <div className="text-[11px] font-bold uppercase tracking-wider" style={{ color: currentTheme.textSecondary }}>
-                  Koleksi Produk ({products.length > 0 ? products.length : 2})
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  {(products.length > 0 ? products.slice(0, 4) : [1, 2]).map((_, i) => (
+                {/* Banner Carousel Preview */}
+                {banners.length > 0 && isPro && (
+                  <div className="px-4 mt-3">
                     <div
-                      key={i}
-                      className="rounded-xl p-2 border shadow-2xs space-y-1.5"
+                      className="rounded-xl overflow-hidden aspect-[21/9] border relative shadow-xs group"
+                      style={{ borderColor: currentTheme.cardBorder }}
+                    >
+                      <img
+                        key={banners[previewBannerIndex % banners.length]?.id}
+                        src={banners[previewBannerIndex % banners.length]?.image_url}
+                        alt="Banner"
+                        className="w-full h-full object-cover transition-all duration-700 animate-in fade-in"
+                      />
+                      {banners[previewBannerIndex % banners.length]?.title && (
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end p-2 pb-4">
+                          <span className="text-[10px] text-white font-bold line-clamp-1">
+                            {banners[previewBannerIndex % banners.length]?.title}
+                          </span>
+                        </div>
+                      )}
+                      {banners.length > 1 && (
+                        <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1 z-10">
+                          {banners.map((b, idx) => (
+                            <div
+                              key={b.id}
+                              className={`h-1 rounded-full transition-all duration-300 ${
+                                idx === (previewBannerIndex % banners.length)
+                                  ? "w-3 bg-white shadow-2xs"
+                                  : "w-1 bg-white/50"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Mini Search & Category Chips Simulation */}
+                <div className="px-4 mt-3 space-y-2">
+                  <div className="relative">
+                    <Search
+                      className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5"
+                      style={{ color: currentTheme.textSecondary }}
+                    />
+                    <div
+                      className="w-full h-8 pl-8 pr-2.5 rounded-xl text-[11px] font-medium flex items-center shadow-2xs"
                       style={{
                         backgroundColor: currentTheme.card,
-                        borderColor: currentTheme.cardBorder,
+                        color: currentTheme.textSecondary,
+                        border: `1px solid ${currentTheme.cardBorder}`,
                       }}
                     >
-                      <div className="aspect-square rounded-lg bg-slate-200/60 overflow-hidden relative">
-                        <span className="absolute top-1 left-1 bg-black/60 text-white text-[9px] font-bold px-1 rounded">
-                          #{i + 1}
-                        </span>
-                      </div>
-                      <div className="text-[11px] font-semibold truncate" style={{ color: currentTheme.text }}>
-                        Produk Pilihan #{i + 1}
-                      </div>
-                      <div
-                        className={`text-[10px] font-bold py-1.5 px-2 text-center transition-all ${
-                          currentTheme.buttonRadius || "rounded-lg"
+                      Cari nomor atau nama produk…
+                    </div>
+                  </div>
+
+                  <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+                    {["Semua", "Outfit", "Gadget", "Racun Shopee"].map((cat, idx) => (
+                      <span
+                        key={cat}
+                        className={`text-[9px] px-2.5 py-0.5 rounded-full font-bold whitespace-nowrap shadow-2xs ${
+                          idx === 0 ? "" : "opacity-85"
                         }`}
                         style={{
-                          backgroundColor: currentTheme.button,
-                          color: currentTheme.buttonText,
+                          backgroundColor: idx === 0 ? currentTheme.chipActiveBg : currentTheme.card,
+                          color: idx === 0 ? currentTheme.chipActiveText : currentTheme.textSecondary,
+                          border: `1px solid ${idx === 0 ? currentTheme.chipActiveBg : currentTheme.cardBorder}`,
                         }}
                       >
-                        Beli Sekarang
-                      </div>
-                    </div>
-                  ))}
+                        {cat}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* UdaLink Branding Footer */}
-              <div className="p-3 text-center border-t text-[10px] mt-auto" style={{ borderColor: currentTheme.cardBorder, color: currentTheme.textSecondary }}>
-                Dibuat dengan <strong style={{ color: currentTheme.button }}>UdaLink</strong>
+                {/* Product Collection Grid */}
+                <div className="px-4 py-3 space-y-2 flex-1">
+                  <div
+                    className="text-[10px] font-black uppercase tracking-wider flex items-center justify-between"
+                    style={{ color: currentTheme.textSecondary }}
+                  >
+                    <span>Koleksi Produk ({products.length > 0 ? products.length : 4})</span>
+                    <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded">
+                      Live
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {displayProducts.map((prod) => (
+                      <div
+                        key={prod.number}
+                        className="rounded-2xl p-2 border shadow-2xs flex flex-col justify-between group hover:-translate-y-0.5 hover:shadow-xs transition-all duration-200"
+                        style={{
+                          backgroundColor: currentTheme.card,
+                          borderColor: currentTheme.cardBorder,
+                        }}
+                      >
+                        <div>
+                          <div className="aspect-square rounded-xl bg-slate-100 overflow-hidden relative mb-1.5">
+                            <span
+                              className="absolute top-1 left-1 text-[8px] font-black px-1.5 py-0.5 rounded-md z-10 shadow-xs"
+                              style={{
+                                backgroundColor: currentTheme.badgeBg,
+                                color: currentTheme.badgeText,
+                              }}
+                            >
+                              #{prod.number}
+                            </span>
+                            <img
+                              src={prod.image}
+                              alt={prod.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          </div>
+                          <p
+                            className="text-[10px] font-bold line-clamp-1 leading-tight"
+                            style={{ color: currentTheme.text }}
+                          >
+                            {prod.name}
+                          </p>
+                        </div>
+
+                        <div className="mt-1 pt-1 border-t" style={{ borderColor: currentTheme.cardBorder }}>
+                          <p
+                            className="text-[10px] font-black"
+                            style={{ color: currentTheme.button }}
+                          >
+                            {formatRupiah(prod.price)}
+                          </p>
+                          <div
+                            className={`mt-1 w-full text-[8px] font-bold py-1.5 px-1 text-center transition-all shadow-2xs group-hover:brightness-105 active:scale-95 flex items-center justify-center gap-1 ${
+                              currentTheme.buttonRadius || "rounded-lg"
+                            }`}
+                            style={{
+                              backgroundColor: currentTheme.button,
+                              color: currentTheme.buttonText,
+                            }}
+                          >
+                            <span>{getMarketplaceBtnText(prod.marketplace)}</span>
+                            <ExternalLink className="w-2 h-2" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* UdaLink Branding Footer */}
+                <div
+                  className="p-3 text-center border-t text-[9px] mt-auto font-medium"
+                  style={{
+                    borderColor: currentTheme.cardBorder,
+                    color: currentTheme.textSecondary,
+                  }}
+                >
+                  Dibuat dengan <strong style={{ color: currentTheme.button }}>UdaLink</strong> · Buat etalasemu gratis
+                </div>
               </div>
             </div>
           </div>
