@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { formatRupiah, formatTanggal } from "@/lib/utils";
-import type { MyPlanResponse, Payment } from "@/types/database";
+import type { MyPlanResponse, Payment, PaymentMethodItem } from "@/types/database";
 
 export default function LanggananPage() {
   const [plan, setPlan] = useState<MyPlanResponse | null>(null);
@@ -35,16 +35,71 @@ export default function LanggananPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const [planRes, payRes] = await Promise.all([
+      const [planRes, payRes, settingsRes] = await Promise.all([
         supabase.rpc("get_my_plan"),
         supabase
           .from("payments")
           .select("*")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false }),
+        supabase
+          .from("app_settings")
+          .select("payment_methods, bank_name, bank_account_number, bank_account_name, admin_whatsapp")
+          .eq("id", 1)
+          .maybeSingle(),
       ]);
 
-      if (planRes.data) setPlan(planRes.data as MyPlanResponse);
+      let methodsFromSettings: PaymentMethodItem[] = [];
+      if (settingsRes.data?.payment_methods) {
+        const raw = settingsRes.data.payment_methods;
+        if (Array.isArray(raw)) {
+          methodsFromSettings = raw as PaymentMethodItem[];
+        } else if (typeof raw === "string") {
+          try {
+            methodsFromSettings = JSON.parse(raw);
+          } catch {
+            methodsFromSettings = [];
+          }
+        }
+      }
+
+      if (planRes.data) {
+        const planData = { ...(planRes.data as MyPlanResponse) };
+
+        // Prioritaskan daftar metode pembayaran dari app_settings panel admin
+        if (methodsFromSettings.length > 0) {
+          planData.payment_methods = methodsFromSettings;
+        }
+
+        if (settingsRes.data?.bank_name) {
+          planData.bank_name = settingsRes.data.bank_name;
+          planData.bank_account_number = settingsRes.data.bank_account_number;
+          planData.bank_account_name = settingsRes.data.bank_account_name;
+        }
+        if (settingsRes.data?.admin_whatsapp) {
+          planData.admin_whatsapp = settingsRes.data.admin_whatsapp;
+        }
+
+        setPlan(planData);
+      } else if (settingsRes.data) {
+        setPlan({
+          role: "user",
+          is_pro: false,
+          pro_until: null,
+          is_suspended: false,
+          payment_code: Math.floor(Math.random() * 900) + 100,
+          product_count: 0,
+          free_product_limit: 30,
+          pro_price: 29000,
+          pro_duration_days: 30,
+          bank_name: settingsRes.data.bank_name || "BCA",
+          bank_account_number: settingsRes.data.bank_account_number || "",
+          bank_account_name: settingsRes.data.bank_account_name || "PT UdaLink Media Nusantara",
+          admin_whatsapp: settingsRes.data.admin_whatsapp || "",
+          payment_methods: methodsFromSettings,
+        });
+      }
+
       if (payRes.data) setPayments(payRes.data as Payment[]);
     } catch (err: unknown) {
       toast.error("Gagal memuat data langganan");
@@ -67,21 +122,37 @@ export default function LanggananPage() {
   const totalTransfer = activeBasePrice + paymentCode;
   const isPro = plan?.is_pro ?? false;
 
-  const availableMethods =
-    plan?.payment_methods && plan.payment_methods.length > 0
-      ? plan.payment_methods.filter((m) => m.is_active)
-      : [
-          {
-            id: "default_method",
-            bank_name: plan?.bank_name || "BCA",
-            account_number: plan?.bank_account_number || "1234567890",
-            account_name: plan?.bank_account_name || "PT UdaLink Media Nusantara",
-            is_active: true,
-          },
-        ];
+  const availableMethods: PaymentMethodItem[] = (() => {
+    const list =
+      plan?.payment_methods && plan.payment_methods.length > 0
+        ? plan.payment_methods
+        : [];
+
+    const activeList = list.filter(
+      (m) => m.is_active === true || (m.is_active as unknown) === "true"
+    );
+
+    if (activeList.length > 0) return activeList;
+
+    return [
+      {
+        id: "default_method",
+        bank_name: plan?.bank_name || "BCA",
+        account_number: plan?.bank_account_number || "1234567890",
+        account_name: plan?.bank_account_name || "PT UdaLink Media Nusantara",
+        is_active: true,
+      },
+    ];
+  })();
 
   const currentMethod =
     availableMethods.find((m) => m.id === selectedMethodId) || availableMethods[0];
+
+  useEffect(() => {
+    if (!selectedMethodId && availableMethods.length > 0) {
+      setSelectedMethodId(availableMethods[0].id);
+    }
+  }, [availableMethods, selectedMethodId]);
 
   // Cek apakah ada pembayaran yang sedang pending
   const pendingPayment = payments.find((p) => p.status === "pending");
@@ -144,7 +215,7 @@ export default function LanggananPage() {
 
       // 2. Submit payment via RPC submit_payment
       const planTag = isYearly ? "Paket Tahunan (365 Hari)" : "Paket Bulanan (30 Hari)";
-      const formattedSenderBank = `${senderBank.trim()} [${planTag}]`;
+      const formattedSenderBank = `${senderBank.trim()} (Tujuan: ${currentMethod.bank_name}) [${planTag}]`;
 
       // Coba panggil RPC submit_payment dengan parameter p_plan_type
       const { error: rpcErr } = await supabase.rpc("submit_payment", {
@@ -415,11 +486,16 @@ export default function LanggananPage() {
             </div>
 
             {/* Pilihan Metode Pembayaran (Multi Bank / QRIS) */}
-            <div className="space-y-2">
-              <span className="text-xs font-semibold text-slate-700 block">
-                Pilih Bank / Metode Tujuan:
-              </span>
-              <div className="flex flex-wrap gap-2">
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-700 block">
+                  Pilih Bank / Metode Tujuan:
+                </span>
+                <span className="text-[11px] text-slate-500 font-medium">
+                  {availableMethods.length} metode aktif
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2.5">
                 {availableMethods.map((m) => {
                   const isSelected = currentMethod.id === m.id;
                   return (
@@ -429,13 +505,18 @@ export default function LanggananPage() {
                       onClick={() => {
                         setSelectedMethodId(m.id);
                       }}
-                      className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      className={`min-h-[44px] px-4 py-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-2 active:scale-95 ${
                         isSelected
-                          ? "bg-[#16A34A] text-white border-[#16A34A] shadow-xs"
+                          ? "bg-[#16A34A] text-white border-[#16A34A] shadow-xs ring-2 ring-[#16A34A]/25"
                           : "bg-white text-slate-700 border-slate-200 hover:border-[#16A34A]/50 hover:bg-slate-50"
                       }`}
                     >
-                      {m.bank_name}
+                      {isSelected ? (
+                        <CheckCircle2 className="w-4 h-4 text-white shrink-0" />
+                      ) : (
+                        <CreditCard className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      )}
+                      <span>{m.bank_name}</span>
                     </button>
                   );
                 })}
@@ -443,12 +524,17 @@ export default function LanggananPage() {
             </div>
 
             {/* Info Rekening Tujuan */}
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <span className="text-[11px] font-medium text-slate-500 block">Bank / Metode Tujuan</span>
-                <span className="text-sm font-bold text-slate-900">
-                  {currentMethod.bank_name}
-                </span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-sm font-bold text-slate-900">
+                    {currentMethod.bank_name}
+                  </span>
+                  <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold px-1.5 py-0">
+                    Aktif
+                  </Badge>
+                </div>
               </div>
 
               <div>
@@ -458,6 +544,7 @@ export default function LanggananPage() {
                     {currentMethod.account_number}
                   </span>
                   <button
+                    type="button"
                     onClick={() =>
                       copyToClipboard(
                         currentMethod.account_number,

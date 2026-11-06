@@ -144,6 +144,7 @@ CREATE TABLE IF NOT EXISTS public.app_settings (
     bank_account_number TEXT NOT NULL,
     bank_account_name TEXT NOT NULL,
     admin_whatsapp TEXT NOT NULL CHECK (admin_whatsapp ~ '^62[0-9]+$'),
+    payment_methods JSONB DEFAULT '[]'::jsonb,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -1162,7 +1163,8 @@ BEGIN
     WHERE user_id = v_user_id;
 
     SELECT pro_price, pro_duration_days, free_product_limit,
-           bank_name, bank_account_number, bank_account_name, admin_whatsapp
+           bank_name, bank_account_number, bank_account_name, admin_whatsapp,
+           payment_methods
     INTO v_settings
     FROM public.app_settings
     WHERE id = 1;
@@ -1187,7 +1189,8 @@ BEGIN
         'bank_name', v_settings.bank_name,
         'bank_account_number', v_settings.bank_account_number,
         'bank_account_name', v_settings.bank_account_name,
-        'admin_whatsapp', v_settings.admin_whatsapp
+        'admin_whatsapp', v_settings.admin_whatsapp,
+        'payment_methods', COALESCE(v_settings.payment_methods, '[]'::jsonb)
     );
 END;
 $$;
