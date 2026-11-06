@@ -191,7 +191,7 @@ export function PhoneMockup({
             })}
           </div>
           <p className="text-[10px] text-slate-400 text-center mt-2 font-medium">
-            💡 Klik tema di atas untuk melihat perubahan warna seketika
+             Klik tema di atas untuk melihat perubahan warna seketika
           </p>
         </div>
       )}
