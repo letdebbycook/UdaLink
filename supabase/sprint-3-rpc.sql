@@ -8,6 +8,8 @@
 -- Dipanggil oleh affiliator saat upload bukti pembayaran.
 -- Menghitung total amount (harga Pro + kode unik) & duration_days di database.
 -- Menolak jika sudah ada pembayaran berstatus 'pending'.
+DROP FUNCTION IF EXISTS public.submit_payment(TEXT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.submit_payment(TEXT, TEXT, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION public.submit_payment(
     p_sender_name TEXT,
     p_sender_bank TEXT,

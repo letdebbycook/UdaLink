@@ -134,19 +134,25 @@ export default function LanggananPage() {
 
     if (activeList.length > 0) return activeList;
 
-    return [
-      {
-        id: "default_method",
-        bank_name: plan?.bank_name || "BCA",
-        account_number: plan?.bank_account_number || "1234567890",
-        account_name: plan?.bank_account_name || "PT UdaLink Media Nusantara",
-        is_active: true,
-      },
-    ];
+    // Jika app_settings memiliki bank utama dan belum ada list payment_methods
+    if (plan?.bank_name && plan?.bank_account_number && list.length === 0) {
+      return [
+        {
+          id: "primary_method",
+          bank_name: plan.bank_name,
+          account_number: plan.bank_account_number,
+          account_name: plan.bank_account_name || "PT UdaLink Media Nusantara",
+          is_active: true,
+        },
+      ];
+    }
+
+    // Jika admin sengaja menonaktifkan semua metode pembayaran, kembalikan array kosong (S1-05)
+    return [];
   })();
 
-  const currentMethod =
-    availableMethods.find((m) => m.id === selectedMethodId) || availableMethods[0];
+  const currentMethod: PaymentMethodItem | null =
+    availableMethods.find((m) => m.id === selectedMethodId) || availableMethods[0] || null;
 
   useEffect(() => {
     if (!selectedMethodId && availableMethods.length > 0) {
@@ -192,6 +198,10 @@ export default function LanggananPage() {
       toast.error("Data paket langganan belum termuat. Silakan muat ulang halaman.");
       return;
     }
+    if (!currentMethod) {
+      toast.error("Metode pembayaran tujuan belum dipilih atau belum tersedia.");
+      return;
+    }
     if (!senderName.trim() || !proofFile) {
       toast.error("Nama pengirim dan bukti transfer wajib diisi");
       return;
@@ -213,11 +223,10 @@ export default function LanggananPage() {
 
       if (uploadErr) throw uploadErr;
 
-      // 2. Submit payment via RPC submit_payment
+      // 2. Submit payment via RPC submit_payment kanonik (4 parameter dengan durasi & plan type)
       const planTag = isYearly ? "Paket Tahunan (365 Hari)" : "Paket Bulanan (30 Hari)";
       const formattedSenderBank = `${senderBank.trim()} (Tujuan: ${currentMethod.bank_name}) [${planTag}]`;
 
-      // Coba panggil RPC submit_payment dengan parameter p_plan_type
       const { error: rpcErr } = await supabase.rpc("submit_payment", {
         p_sender_name: senderName.trim(),
         p_sender_bank: formattedSenderBank,
@@ -225,15 +234,8 @@ export default function LanggananPage() {
         p_plan_type: billingCycle,
       });
 
-      // Fallback jika database belum ada overload 4 parameter
       if (rpcErr) {
-        const { error: fallbackErr } = await supabase.rpc("submit_payment", {
-          p_sender_name: senderName.trim(),
-          p_sender_bank: formattedSenderBank,
-          p_proof_path: filePath,
-        });
-
-        if (fallbackErr) throw new Error(fallbackErr.message);
+        throw new Error(rpcErr.message);
       }
 
       toast.success("Bukti transfer berhasil dikirim! Menunggu konfirmasi admin.");
@@ -486,105 +488,122 @@ export default function LanggananPage() {
             </div>
 
             {/* Pilihan Metode Pembayaran (Multi Bank / QRIS) */}
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-700 block">
-                  Pilih Bank / Metode Tujuan:
-                </span>
-                <span className="text-[11px] text-slate-500 font-medium">
-                  {availableMethods.length} metode aktif
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-2.5">
-                {availableMethods.map((m) => {
-                  const isSelected = currentMethod.id === m.id;
-                  return (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedMethodId(m.id);
-                      }}
-                      className={`min-h-[44px] px-4 py-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-2 active:scale-95 ${
-                        isSelected
-                          ? "bg-[#16A34A] text-white border-[#16A34A] shadow-xs ring-2 ring-[#16A34A]/25"
-                          : "bg-white text-slate-700 border-slate-200 hover:border-[#16A34A]/50 hover:bg-slate-50"
-                      }`}
-                    >
-                      {isSelected ? (
-                        <CheckCircle2 className="w-4 h-4 text-white shrink-0" />
-                      ) : (
-                        <CreditCard className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      )}
-                      <span>{m.bank_name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Info Rekening Tujuan */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <span className="text-[11px] font-medium text-slate-500 block">Bank / Metode Tujuan</span>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-sm font-bold text-slate-900">
-                    {currentMethod.bank_name}
-                  </span>
-                  <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold px-1.5 py-0">
-                    Aktif
-                  </Badge>
+            {availableMethods.length === 0 || !currentMethod ? (
+              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <h4 className="text-xs font-bold text-amber-900">
+                    Metode Pembayaran Belum Tersedia
+                  </h4>
+                  <p className="text-xs text-amber-800 leading-relaxed">
+                    Saat ini seluruh saluran rekening pembayaran dinonaktifkan oleh administrator.
+                    Silakan hubungi admin via WhatsApp untuk konfirmasi rekening pembayaran manual.
+                  </p>
                 </div>
               </div>
-
-              <div>
-                <span className="text-[11px] font-medium text-slate-500 block">Nomor Rekening / No. VA</span>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-sm font-bold text-slate-900 font-mono">
-                    {currentMethod.account_number}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      copyToClipboard(
-                        currentMethod.account_number,
-                        "Nomor rekening"
-                      )
-                    }
-                    className="p-1.5 min-h-[36px] min-w-[36px] rounded-lg hover:bg-slate-200/70 flex items-center justify-center text-slate-600 hover:text-slate-900 active:scale-95 transition-all"
-                    title="Salin Nomor Rekening"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
+            ) : (
+              <>
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-700 block">
+                      Pilih Bank / Metode Tujuan:
+                    </span>
+                    <span className="text-[11px] text-slate-500 font-medium">
+                      {availableMethods.length} metode aktif
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2.5">
+                    {availableMethods.map((m) => {
+                      const isSelected = currentMethod?.id === m.id;
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedMethodId(m.id);
+                          }}
+                          className={`min-h-[44px] px-4 py-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-2 active:scale-95 ${
+                            isSelected
+                              ? "bg-[#16A34A] text-white border-[#16A34A] shadow-xs ring-2 ring-[#16A34A]/25"
+                              : "bg-white text-slate-700 border-slate-200 hover:border-[#16A34A]/50 hover:bg-slate-50"
+                          }`}
+                        >
+                          {isSelected ? (
+                            <CheckCircle2 className="w-4 h-4 text-white shrink-0" />
+                          ) : (
+                            <CreditCard className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          )}
+                          <span>{m.bank_name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <span className="text-[11px] text-slate-500 block">
-                  a.n. {currentMethod.account_name}
-                </span>
-              </div>
 
-              <div>
-                <span className="text-[11px] font-medium text-slate-500 block">
-                  Jumlah Transfer Tepat
-                </span>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-base font-extrabold text-[#16A34A]">
-                    {formatRupiah(totalTransfer)}
-                  </span>
-                  <button
-                    onClick={() =>
-                      copyToClipboard(String(totalTransfer), "Jumlah transfer")
-                    }
-                    className="p-1.5 min-h-[36px] min-w-[36px] rounded-lg hover:bg-slate-200/70 flex items-center justify-center text-slate-600 hover:text-slate-900 active:scale-95 transition-all"
-                    title="Salin Jumlah Transfer"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
+                {/* Info Rekening Tujuan */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <span className="text-[11px] font-medium text-slate-500 block">Bank / Metode Tujuan</span>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-sm font-bold text-slate-900">
+                        {currentMethod.bank_name}
+                      </span>
+                      <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold px-1.5 py-0">
+                        Aktif
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="text-[11px] font-medium text-slate-500 block">Nomor Rekening / No. VA</span>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-sm font-bold text-slate-900 font-mono">
+                        {currentMethod.account_number}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          copyToClipboard(
+                            currentMethod.account_number,
+                            "Nomor rekening"
+                          )
+                        }
+                        className="p-1.5 min-h-[36px] min-w-[36px] rounded-lg hover:bg-slate-200/70 flex items-center justify-center text-slate-600 hover:text-slate-900 active:scale-95 transition-all"
+                        title="Salin Nomor Rekening"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <span className="text-[11px] text-slate-500 block">
+                      a.n. {currentMethod.account_name}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className="text-[11px] font-medium text-slate-500 block">
+                      Jumlah Transfer Tepat
+                    </span>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-base font-extrabold text-[#16A34A]">
+                        {formatRupiah(totalTransfer)}
+                      </span>
+                      <button
+                        onClick={() =>
+                          copyToClipboard(String(totalTransfer), "Jumlah transfer")
+                        }
+                        className="p-1.5 min-h-[36px] min-w-[36px] rounded-lg hover:bg-slate-200/70 flex items-center justify-center text-slate-600 hover:text-slate-900 active:scale-95 transition-all"
+                        title="Salin Jumlah Transfer"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <span className="text-[10px] text-amber-700 font-medium block">
+                      *Wajib transfer tepat hingga 3 digit terakhir (#{paymentCode})
+                    </span>
+                  </div>
                 </div>
-                <span className="text-[10px] text-amber-700 font-medium block">
-                  *Wajib transfer tepat hingga 3 digit terakhir (#{paymentCode})
-                </span>
-              </div>
-            </div>
+              </>
+            )}
 
             {/* Form Konfirmasi Bukti Transfer */}
             <form onSubmit={handleSubmitPayment} className="space-y-4 pt-2">
@@ -646,7 +665,7 @@ export default function LanggananPage() {
               <div className="pt-2">
                 <Button
                   type="submit"
-                  disabled={submitting || !proofFile || !senderName.trim()}
+                  disabled={submitting || !proofFile || !senderName.trim() || availableMethods.length === 0 || !currentMethod}
                   className="bg-[#16A34A] hover:bg-[#15803D] text-white gap-2"
                 >
                   {submitting && <Loader2 className="w-4 h-4 animate-spin" />}

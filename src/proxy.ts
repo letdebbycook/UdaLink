@@ -1,6 +1,17 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+// Helper tunggal untuk query membership dengan penanganan maybeSingle
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function getMembership(supabase: any, userId: string) {
+  const { data: membership } = await supabase
+    .from("memberships")
+    .select("role, is_suspended")
+    .eq("user_id", userId)
+    .maybeSingle();
+  return membership;
+}
+
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
     request: {
@@ -8,12 +19,13 @@ export async function proxy(request: NextRequest) {
     },
   });
 
+  const pathname = request.nextUrl.pathname;
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   // Otomatis tangkap dan teruskan code OAuth dari Google/Supabase jika mendarat di luar /auth/callback
   const searchParams = request.nextUrl.searchParams;
-  if (searchParams.has("code") && !request.nextUrl.pathname.startsWith("/auth/callback")) {
+  if (searchParams.has("code") && !pathname.startsWith("/auth/callback")) {
     const callbackUrl = new URL("/auth/callback", request.url);
     searchParams.forEach((value, key) => {
       callbackUrl.searchParams.set(key, value);
@@ -21,7 +33,15 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(callbackUrl);
   }
 
+  // Fail-closed jika environment Supabase belum disetel (S1-06)
   if (!supabaseUrl || !supabaseAnonKey) {
+    const isProtectedPath = pathname.startsWith("/dashboard") || pathname.startsWith("/admin");
+    if (isProtectedPath) {
+      return new NextResponse(
+        "Kesalahan Konfigurasi Server: Kunci Supabase belum disetel di server environment.",
+        { status: 500 }
+      );
+    }
     return response;
   }
 
@@ -46,8 +66,6 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const pathname = request.nextUrl.pathname;
-
   // 1. Proteksi dan Redireksi Halaman Dashboard (/dashboard/...)
   if (pathname.startsWith("/dashboard")) {
     if (!user) {
@@ -56,18 +74,20 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
 
-    // Role admin langsung diarahkan ke panel admin saja
-    const { data: membership } = await supabase
-      .from("memberships")
-      .select("role, is_suspended")
-      .eq("user_id", user.id)
-      .single();
+    const membership = await getMembership(supabase, user.id);
 
-    if (membership?.is_suspended === true) {
+    // Fail-closed jika akun user tidak memiliki data membership valid (S1-04)
+    if (!membership) {
+      const redirectUrl = new URL("/masuk", request.url);
+      redirectUrl.searchParams.set("error", "membership_not_found");
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    if (membership.is_suspended === true) {
       return NextResponse.redirect(new URL("/akun-dinonaktifkan", request.url));
     }
 
-    if (membership?.role === "admin") {
+    if (membership.role === "admin") {
       return NextResponse.redirect(new URL("/admin", request.url));
     }
   }
@@ -80,12 +100,7 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
 
-    // Cek role admin dari tabel memberships
-    const { data: membership } = await supabase
-      .from("memberships")
-      .select("role, is_suspended")
-      .eq("user_id", user.id)
-      .single();
+    const membership = await getMembership(supabase, user.id);
 
     if (membership?.is_suspended === true) {
       return NextResponse.redirect(new URL("/akun-dinonaktifkan", request.url));
@@ -99,11 +114,7 @@ export async function proxy(request: NextRequest) {
 
   // 3. Jika sudah login, cegah buka halaman /masuk atau /daftar
   if (user && (pathname === "/masuk" || pathname === "/daftar")) {
-    const { data: membership } = await supabase
-      .from("memberships")
-      .select("role, is_suspended")
-      .eq("user_id", user.id)
-      .single();
+    const membership = await getMembership(supabase, user.id);
 
     if (membership?.is_suspended === true) {
       return NextResponse.redirect(new URL("/akun-dinonaktifkan", request.url));
@@ -119,11 +130,7 @@ export async function proxy(request: NextRequest) {
   // 4. Cek akses ke halaman akun-dinonaktifkan
   const isSuspendedPage = pathname === "/akun-dinonaktifkan";
   if (user && isSuspendedPage) {
-    const { data: membership } = await supabase
-      .from("memberships")
-      .select("role, is_suspended")
-      .eq("user_id", user.id)
-      .single();
+    const membership = await getMembership(supabase, user.id);
 
     if (!membership?.is_suspended) {
       if (membership?.role === "admin") {

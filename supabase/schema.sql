@@ -1140,6 +1140,7 @@ $$;
 GRANT EXECUTE ON FUNCTION public.get_my_stats(INTEGER) TO authenticated;
 
 -- 7.4 get_my_plan()
+DROP FUNCTION IF EXISTS public.get_my_plan();
 CREATE OR REPLACE FUNCTION public.get_my_plan()
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -1152,6 +1153,7 @@ DECLARE
     v_settings RECORD;
     v_product_count INTEGER;
     v_is_pro BOOLEAN;
+    v_payment_code INTEGER;
 BEGIN
     IF v_user_id IS NULL THEN
         RAISE EXCEPTION 'Akses ditolak: user belum login';
@@ -1176,12 +1178,20 @@ BEGIN
 
     v_is_pro := (v_membership.pro_until IS NOT NULL AND v_membership.pro_until > now());
 
+    -- Gunakan kode pembayaran unik yang persisten jika belum terisi
+    IF v_membership.payment_code IS NULL THEN
+        v_payment_code := floor(random() * 900 + 100)::integer;
+        UPDATE public.memberships SET payment_code = v_payment_code WHERE user_id = v_user_id;
+    ELSE
+        v_payment_code := v_membership.payment_code;
+    END IF;
+
     RETURN jsonb_build_object(
         'role', v_membership.role,
         'is_pro', v_is_pro,
         'pro_until', v_membership.pro_until,
         'is_suspended', v_membership.is_suspended,
-        'payment_code', v_membership.payment_code,
+        'payment_code', v_payment_code,
         'product_count', v_product_count,
         'free_product_limit', v_settings.free_product_limit,
         'pro_price', v_settings.pro_price,
@@ -1201,6 +1211,8 @@ GRANT EXECUTE ON FUNCTION public.get_my_plan() TO authenticated;
 -- ==============================================================================
 
 -- 8.1 submit_payment
+DROP FUNCTION IF EXISTS public.submit_payment(TEXT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.submit_payment(TEXT, TEXT, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION public.submit_payment(
     p_sender_name TEXT,
     p_sender_bank TEXT,
