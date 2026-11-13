@@ -53,3 +53,4 @@ Dokumen ini menutup celah tersebut dengan 191 kasus uji terstruktur, target bran
 | **S1-04** | `proxy.ts` fail-open saat data membership null | **RESOLVED** | `src/proxy.ts`: Menggunakan `.maybeSingle()`. Jika membership null/tidak ditemukan, request ke `/dashboard` otomatis dialihkan (*fail-closed*) ke `/masuk?error=membership_not_found`. |
 | **S1-05** | Fallback rekening dummy `1234567890` saat admin menonaktifkan seluruh metode | **RESOLVED** | `src/app/(dashboard)/dashboard/langganan/page.tsx`: Dihapus rekening hardcoded palsu. Jika seluruh metode nonaktif, sistem menampilkan banner peringatan dan menonaktifkan form kirim bukti. |
 | **S1-06** | Pass-through bypass saat env Supabase tidak diset | **RESOLVED** | `src/proxy.ts`: Rute privat `/dashboard/*` dan `/admin/*` memblokir akses (status 500) jika konfigurasi kredensial belum tersedia di server. |
+

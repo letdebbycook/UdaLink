@@ -159,3 +159,4 @@ BEGIN
 END;
 $$;
 GRANT EXECUTE ON FUNCTION public.get_my_plan() TO authenticated;
+
