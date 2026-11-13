@@ -114,6 +114,36 @@ function validateMarketplaceUrl(rawUrl: string): {
 }
 
 /**
+ * Pilih User-Agent berdasarkan domain marketplace.
+ * Shopee & TikTok memerlukan social-bot UA agar server-side rendering OG meta aktif.
+ * Tokopedia & Lazada bekerja dengan Chrome UA biasa.
+ */
+function getUserAgentForDomain(hostname: string): {
+  userAgent: string;
+  isSocialBot: boolean;
+} {
+  const h = hostname.toLowerCase();
+  const needsSocialBot =
+    h.includes("shopee.co.id") ||
+    h.includes("shopee.com") ||
+    h.includes("shp.ee") ||
+    h.includes("tiktok.com");
+
+  if (needsSocialBot) {
+    return {
+      userAgent: "WhatsApp/2.21.12.21 N",
+      isSocialBot: true,
+    };
+  }
+
+  return {
+    userAgent:
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    isSocialBot: false,
+  };
+}
+
+/**
  * Normalisasi URL gambar jika berupa relative path atau scheme-relative
  */
 function normalizeImageUrl(rawUrl: string, baseUrl: string): string | null {
@@ -176,19 +206,27 @@ export async function POST(request: NextRequest) {
 
     try {
       while (redirectCount <= MAX_REDIRECTS) {
+        const { userAgent, isSocialBot } = getUserAgentForDomain(
+          new URL(currentUrl).hostname
+        );
+
+        // Header Chrome-hint (Sec-Ch-Ua) tidak kompatibel dengan social-bot UA
+        const headers: Record<string, string> = {
+          "User-Agent": userAgent,
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
+        };
+
+        if (!isSocialBot) {
+          headers["Sec-Ch-Ua"] =
+            '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"';
+          headers["Sec-Ch-Ua-Mobile"] = "?0";
+          headers["Sec-Ch-Ua-Platform"] = '"Windows"';
+        }
+
         const response = await fetch(currentUrl, {
           signal: controller.signal,
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-            Accept:
-              "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-            "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
-            "Sec-Ch-Ua":
-              '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
-            "Sec-Ch-Ua-Mobile": "?0",
-            "Sec-Ch-Ua-Platform": '"Windows"',
-          },
+          headers,
           redirect: "manual",
           next: { revalidate: 0 },
         });
