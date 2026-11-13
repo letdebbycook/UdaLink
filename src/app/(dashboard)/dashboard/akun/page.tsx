@@ -540,7 +540,7 @@ export default function AkunPage() {
           try {
             await supabase.auth.signOut();
             toast.success("Berhasil keluar dari akun.");
-            router.push("/masuk");
+            window.location.replace("/masuk");
           } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : "Terjadi kesalahan";
             toast.error(`Gagal keluar: ${msg}`);

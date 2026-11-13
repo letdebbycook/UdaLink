@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -29,12 +29,56 @@ export default function AdminLayout({
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [loadingLogout, setLoadingLogout] = useState(false);
 
+  useEffect(() => {
+    let mounted = true;
+
+    async function checkAdminAuth() {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user && mounted) {
+          window.location.replace("/masuk");
+        }
+      } catch {
+        // Abaikan
+      }
+    }
+
+    checkAdminAuth();
+
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        supabase.auth.getUser().then(({ data: { user } }) => {
+          if (!user) {
+            window.location.replace("/masuk");
+          }
+        });
+      }
+    };
+    window.addEventListener("pageshow", handlePageShow);
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT" || !session) {
+        window.location.replace("/masuk");
+      }
+    });
+
+    return () => {
+      mounted = false;
+      window.removeEventListener("pageshow", handlePageShow);
+      subscription.unsubscribe();
+    };
+  }, []);
+
   const handleLogout = async () => {
     setLoadingLogout(true);
     try {
       await supabase.auth.signOut();
       toast.success("Berhasil keluar dari sesi admin.");
-      router.push("/masuk");
+      window.location.replace("/masuk");
     } catch (err) {
       console.error("Gagal logout:", err);
       toast.error("Gagal keluar akun.");

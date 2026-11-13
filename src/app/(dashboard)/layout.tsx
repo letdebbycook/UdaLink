@@ -51,10 +51,17 @@ export default function DashboardLayout({
   });
 
   useEffect(() => {
+    let mounted = true;
+
     async function loadUser() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!user) {
+          if (mounted) {
+            window.location.replace("/masuk");
+          }
+          return;
+        }
 
         const [profRes, planRes] = await Promise.all([
           supabase
@@ -68,18 +75,48 @@ export default function DashboardLayout({
         const prof = profRes.data;
         const plan = planRes.data as { is_pro?: boolean; role?: string } | null;
 
-        setCurrentUser({
-          displayName: prof?.display_name || user.email?.split("@")[0] || "Pengguna",
-          username: prof?.username || "user",
-          avatarUrl: prof?.avatar_url || null,
-          isPro: Boolean(plan?.is_pro),
-          isAdmin: plan?.role === "admin",
-        });
+        if (mounted) {
+          setCurrentUser({
+            displayName: prof?.display_name || user.email?.split("@")[0] || "Pengguna",
+            username: prof?.username || "user",
+            avatarUrl: prof?.avatar_url || null,
+            isPro: Boolean(plan?.is_pro),
+            isAdmin: plan?.role === "admin",
+          });
+        }
       } catch (err) {
         console.warn("Gagal memuat profil header:", err);
       }
     }
+
     loadUser();
+
+    // Deteksi restorasi dari bfcache saat user tekan tombol Back/Forward di browser
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        supabase.auth.getUser().then(({ data: { user } }) => {
+          if (!user) {
+            window.location.replace("/masuk");
+          }
+        });
+      }
+    };
+    window.addEventListener("pageshow", handlePageShow);
+
+    // Tangani perubahan status otentikasi (misal logout di tab lain atau token invalid)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT" || !session) {
+        window.location.replace("/masuk");
+      }
+    });
+
+    return () => {
+      mounted = false;
+      window.removeEventListener("pageshow", handlePageShow);
+      subscription.unsubscribe();
+    };
   }, []);
 
   function handleLogout() {
@@ -91,8 +128,9 @@ export default function DashboardLayout({
       setIsLoggingOut(true);
       await supabase.auth.signOut();
       toast.success("Berhasil keluar dari akun.");
-      router.push("/masuk");
-    } catch (err) {
+      // Gunakan replace agar history halaman dashboard tergantikan
+      window.location.replace("/masuk");
+    } catch {
       toast.error("Gagal keluar dari akun.");
       setIsLoggingOut(false);
       setShowLogoutModal(false);

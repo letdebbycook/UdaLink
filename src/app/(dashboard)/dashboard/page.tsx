@@ -35,7 +35,10 @@ export default function DashboardOverviewPage() {
       setSiteUrl(window.location.origin);
 
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        window.location.replace("/masuk");
+        return;
+      }
 
       const { data: profile } = await supabase
         .from("profiles")

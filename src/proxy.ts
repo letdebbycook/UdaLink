@@ -140,6 +140,16 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  // 5. Cegah caching browser / bfcache untuk halaman terproteksi (Dashboard & Admin)
+  if (pathname.startsWith("/dashboard") || pathname.startsWith("/admin")) {
+    response.headers.set(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+    );
+    response.headers.set("Pragma", "no-cache");
+    response.headers.set("Expires", "0");
+  }
+
   return response;
 }
 
